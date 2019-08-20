@@ -23,9 +23,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
 
-import org.apache.maven.lifecycle.internal.stub.LoggerStub;
 import org.apache.maven.model.DependencyManagement;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.Parent;
@@ -47,7 +45,7 @@ public class MavenProjectTest
         childModel.setArtifactId( "artifact" );
 
         MavenProject childProject = new MavenProject( childModel );
-        
+
         File childFile =
             new File( System.getProperty( "java.io.tmpdir" ), "maven-project-tests" + System.currentTimeMillis()
                 + "/child/pom.xml" );
@@ -57,7 +55,7 @@ public class MavenProjectTest
         String adjustment = parentProject.getModulePathAdjustment( childProject );
 
         assertNotNull( adjustment );
-        
+
         assertEquals( "..", adjustment );
     }
 
@@ -147,11 +145,11 @@ public class MavenProjectTest
 
         assertEquals( "..", pathAdjustment );
     }
-    
+
     public void testCloneWithDistributionManagement()
         throws Exception
     {
-        
+
         File f = getFileForClasspathResource( "distributionManagement-pom.xml" );
         MavenProject projectToClone = getProject( f );
 
@@ -179,6 +177,17 @@ public class MavenProjectTest
                        activeProfilesClone );
     }
 
+    public void testCloneWithBaseDir()
+        throws Exception
+    {
+        File f = getFileForClasspathResource( "canonical-pom.xml" );
+        MavenProject projectToClone = getProject( f );
+        projectToClone.setPomFile( new File( new File( f.getParentFile(), "target" ), "flattened.xml" ) );
+        MavenProject clonedProject = projectToClone.clone();
+        assertEquals( "POM file is preserved across clone", projectToClone.getFile(), clonedProject.getFile() );
+        assertEquals( "Base directory is preserved across clone", projectToClone.getBasedir(), clonedProject.getBasedir() );
+    }
+
     public void testUndefinedOutputDirectory()
         throws Exception
     {
@@ -187,6 +196,19 @@ public class MavenProjectTest
         assertNoNulls( p.getSystemClasspathElements() );
         assertNoNulls( p.getRuntimeClasspathElements() );
         assertNoNulls( p.getTestClasspathElements() );
+    }
+
+    public void testAddDotFile()
+    {
+        MavenProject project = new MavenProject();
+
+        File basedir = new File( System.getProperty( "java.io.tmpdir" ) );
+        project.setFile( new File( basedir, "file" ) );
+
+        project.addCompileSourceRoot( basedir.getAbsolutePath() );
+        project.addCompileSourceRoot( "." );
+
+        assertEquals( 1, project.getCompileSourceRoots().size() );
     }
 
     private void assertNoNulls( List<String> elements )

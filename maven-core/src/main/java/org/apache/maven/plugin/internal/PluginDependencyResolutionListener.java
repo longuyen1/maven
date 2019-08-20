@@ -36,7 +36,7 @@ import org.apache.maven.artifact.versioning.VersionRange;
  * for its use. However, the (old) wagons pulled in transitively via legacy Maven core artifacts are usually not
  * intended as dependencies and more importantly screw up artifact resolution because they would get preferred over the
  * core wagon versions. This is a hack to provide backward-compat with Maven 2 (MNG-4528, MNG-4561).
- * 
+ *
  * @since 3.0
  * @author Benjamin Bentmann
  */
@@ -46,13 +46,13 @@ class PluginDependencyResolutionListener
 
     private ArtifactFilter coreFilter;
 
-    private LinkedList<Artifact> coreArtifacts = new LinkedList<Artifact>();
+    private LinkedList<Artifact> coreArtifacts = new LinkedList<>();
 
     private Artifact wagonProvider;
 
-    private Map<Artifact, Object> bannedArtifacts = new IdentityHashMap<Artifact, Object>();
+    private Map<Artifact, Object> bannedArtifacts = new IdentityHashMap<>();
 
-    public PluginDependencyResolutionListener( ArtifactFilter coreFilter )
+    PluginDependencyResolutionListener( ArtifactFilter coreFilter )
     {
         this.coreFilter = coreFilter;
     }

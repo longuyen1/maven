@@ -31,7 +31,7 @@ import org.eclipse.aether.repository.RemoteRepository;
 
 /**
  * Collects settings required to resolve the version for a plugin.
- * 
+ *
  * @since 3.0
  * @author Benjamin Bentmann
  */
@@ -59,7 +59,7 @@ public class DefaultPluginVersionRequest
     /**
      * Creates a request for the specified plugin by copying settings from the specified build session. If the session
      * has a current project, its plugin repositories will be used as well.
-     * 
+     *
      * @param plugin The plugin for which to resolve a version, must not be {@code null}.
      * @param session The Maven session to use, must not be {@code null}.
      */
@@ -79,12 +79,13 @@ public class DefaultPluginVersionRequest
 
     /**
      * Creates a request for the specified plugin using the given repository session and plugin repositories.
-     * 
+     *
      * @param plugin The plugin for which to resolve a version, must not be {@code null}.
      * @param session The repository session to use, must not be {@code null}.
      * @param repositories The plugin repositories to query, may be {@code null}.
      */
-    public DefaultPluginVersionRequest( Plugin plugin, RepositorySystemSession session, List<RemoteRepository> repositories )
+    public DefaultPluginVersionRequest( Plugin plugin, RepositorySystemSession session,
+                                        List<RemoteRepository> repositories )
     {
         setGroupId( plugin.getGroupId() );
         setArtifactId( plugin.getArtifactId() );
@@ -139,7 +140,7 @@ public class DefaultPluginVersionRequest
     {
         if ( repositories != null )
         {
-            this.repositories = repositories;
+            this.repositories = Collections.unmodifiableList( repositories );
         }
         else
         {

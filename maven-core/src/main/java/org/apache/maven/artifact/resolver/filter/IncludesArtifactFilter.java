@@ -39,7 +39,7 @@ public class IncludesArtifactFilter
 
     public IncludesArtifactFilter( List<String> patterns )
     {
-        this.patterns = new LinkedHashSet<String>( patterns );
+        this.patterns = new LinkedHashSet<>( patterns );
     }
 
     public boolean include( Artifact artifact )
@@ -49,7 +49,7 @@ public class IncludesArtifactFilter
         boolean matched = false;
         for ( Iterator<String> i = patterns.iterator(); i.hasNext() & !matched; )
         {
-            // TODO: what about wildcards? Just specifying groups? versions?
+            // TODO what about wildcards? Just specifying groups? versions?
             if ( id.equals( i.next() ) )
             {
                 matched = true;
@@ -60,7 +60,7 @@ public class IncludesArtifactFilter
 
     public List<String> getPatterns()
     {
-        return new ArrayList<String>( patterns );
+        return new ArrayList<>( patterns );
     }
 
     @Override
@@ -68,19 +68,19 @@ public class IncludesArtifactFilter
     {
         int hash = 17;
         hash = hash * 31 + patterns.hashCode();
-        
+
         return hash;
     }
 
     @Override
     public boolean equals( Object obj )
     {
-        if ( this == obj ) 
+        if ( this == obj )
         {
             return true;
         }
 
-        // make sure IncludesArtifactFilter is not equal ExcludesArtifactFilter! 
+        // make sure IncludesArtifactFilter is not equal ExcludesArtifactFilter!
         if ( obj == null || getClass() != obj.getClass() )
         {
             return false;

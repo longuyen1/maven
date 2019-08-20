@@ -24,80 +24,67 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
 import java.util.Map;
+import java.util.Objects;
+
+import javax.inject.Named;
+import javax.inject.Singleton;
 
 import org.apache.maven.settings.Settings;
 import org.apache.maven.settings.io.xpp3.SettingsXpp3Reader;
-import org.codehaus.plexus.component.annotations.Component;
-import org.codehaus.plexus.util.IOUtil;
 import org.codehaus.plexus.util.ReaderFactory;
 import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
 
 /**
  * Handles deserialization of settings from the default textual format.
- * 
+ *
  * @author Benjamin Bentmann
  */
-@Component( role = SettingsReader.class )
+@Named
+@Singleton
 public class DefaultSettingsReader
     implements SettingsReader
 {
 
+    @Override
     public Settings read( File input, Map<String, ?> options )
         throws IOException
     {
-        if ( input == null )
-        {
-            throw new IllegalArgumentException( "input file missing" );
-        }
+        Objects.requireNonNull( input, "input cannot be null" );
 
         Settings settings = read( ReaderFactory.newXmlReader( input ), options );
 
         return settings;
     }
 
+    @Override
     public Settings read( Reader input, Map<String, ?> options )
         throws IOException
     {
-        if ( input == null )
-        {
-            throw new IllegalArgumentException( "input reader missing" );
-        }
+        Objects.requireNonNull( input, "input cannot be null" );
 
-        try
+        try ( final Reader in = input )
         {
-            SettingsXpp3Reader r = new SettingsXpp3Reader();
-            return r.read( input, isStrict( options ) );
+            return new SettingsXpp3Reader().read( in, isStrict( options ) );
         }
         catch ( XmlPullParserException e )
         {
             throw new SettingsParseException( e.getMessage(), e.getLineNumber(), e.getColumnNumber(), e );
-        }
-        finally
-        {
-            IOUtil.close( input );
         }
     }
 
+    @Override
     public Settings read( InputStream input, Map<String, ?> options )
         throws IOException
     {
-        if ( input == null )
-        {
-            throw new IllegalArgumentException( "input stream missing" );
-        }
+        Objects.requireNonNull( input, "input cannot be null" );
 
-        try
+        try ( final InputStream in = input )
         {
-            SettingsXpp3Reader r = new SettingsXpp3Reader();
-            return r.read( input, isStrict( options ) );
+            return new SettingsXpp3Reader().read( in, isStrict( options ) );
         }
         catch ( XmlPullParserException e )
         {
             throw new SettingsParseException( e.getMessage(), e.getLineNumber(), e.getColumnNumber(), e );
-        }
-        finally
-        {
-            IOUtil.close( input );
         }
     }
 

@@ -27,7 +27,7 @@ import org.apache.maven.artifact.Artifact;
 
 /**
  * Apply multiple filters, accepting an artifact if at least one of the filters accepts it.
- * 
+ *
  * @author Benjamin Bentmann
  */
 public class OrArtifactFilter
@@ -38,12 +38,12 @@ public class OrArtifactFilter
 
     public OrArtifactFilter()
     {
-        this.filters = new LinkedHashSet<ArtifactFilter>();
+        this.filters = new LinkedHashSet<>();
     }
 
     public OrArtifactFilter( Collection<ArtifactFilter> filters )
     {
-        this.filters = new LinkedHashSet<ArtifactFilter>( filters );
+        this.filters = new LinkedHashSet<>( filters );
     }
 
     public boolean include( Artifact artifact )
@@ -79,15 +79,15 @@ public class OrArtifactFilter
         {
             return true;
         }
-        
+
         if ( !( obj instanceof OrArtifactFilter ) )
         {
             return false;
         }
-        
+
         OrArtifactFilter other = (OrArtifactFilter) obj;
-        
+
         return filters.equals( other.filters );
     }
-    
+
 }

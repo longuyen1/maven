@@ -21,13 +21,14 @@ package org.apache.maven.model.building;
 
 /**
  * Provides a skeleton implementation for model building listeners. The methods of this class are empty.
- * 
+ *
  * @author Benjamin Bentmann
  */
 public class AbstractModelBuildingListener
     implements ModelBuildingListener
 {
 
+    @Override
     public void buildExtensionsAssembled( ModelBuildingEvent event )
     {
         // default does nothing

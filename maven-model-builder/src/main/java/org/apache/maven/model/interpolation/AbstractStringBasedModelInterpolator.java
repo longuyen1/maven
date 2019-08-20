@@ -27,19 +27,15 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Properties;
 
+import javax.inject.Inject;
+
 import org.apache.maven.model.Model;
 import org.apache.maven.model.building.ModelBuildingRequest;
-import org.apache.maven.model.building.ModelProblem.Severity;
-import org.apache.maven.model.building.ModelProblem.Version;
 import org.apache.maven.model.building.ModelProblemCollector;
-import org.apache.maven.model.building.ModelProblemCollectorRequest;
 import org.apache.maven.model.path.PathTranslator;
 import org.apache.maven.model.path.UrlNormalizer;
-import org.codehaus.plexus.component.annotations.Requirement;
 import org.codehaus.plexus.interpolation.AbstractValueSource;
-import org.codehaus.plexus.interpolation.InterpolationException;
 import org.codehaus.plexus.interpolation.InterpolationPostProcessor;
-import org.codehaus.plexus.interpolation.Interpolator;
 import org.codehaus.plexus.interpolation.MapBasedValueSource;
 import org.codehaus.plexus.interpolation.ObjectBasedValueSource;
 import org.codehaus.plexus.interpolation.PrefixAwareRecursionInterceptor;
@@ -56,13 +52,19 @@ import org.codehaus.plexus.interpolation.ValueSource;
 public abstract class AbstractStringBasedModelInterpolator
     implements ModelInterpolator
 {
+    public static final String SHA1_PROPERTY = "sha1";
+
+    public static final String CHANGELIST_PROPERTY = "changelist";
+
+    public static final String REVISION_PROPERTY = "revision";
+
     private static final List<String> PROJECT_PREFIXES = Arrays.asList( "pom.", "project." );
 
     private static final Collection<String> TRANSLATED_PATH_EXPRESSIONS;
 
     static
     {
-        Collection<String> translatedPrefixes = new HashSet<String>();
+        Collection<String> translatedPrefixes = new HashSet<>();
 
         // MNG-1927, MNG-2124, MNG-3355:
         // If the build section is present and the project directory is non-null, we should make
@@ -80,20 +82,14 @@ public abstract class AbstractStringBasedModelInterpolator
         TRANSLATED_PATH_EXPRESSIONS = translatedPrefixes;
     }
 
-    @Requirement
+    @Inject
     private PathTranslator pathTranslator;
 
-    @Requirement
+    @Inject
     private UrlNormalizer urlNormalizer;
-
-    private Interpolator interpolator;
-
-    private RecursionInterceptor recursionInterceptor;
 
     public AbstractStringBasedModelInterpolator()
     {
-        interpolator = createInterpolator();
-        recursionInterceptor = new PrefixAwareRecursionInterceptor( PROJECT_PREFIXES );
     }
 
     public AbstractStringBasedModelInterpolator setPathTranslator( PathTranslator pathTranslator )
@@ -127,12 +123,13 @@ public abstract class AbstractStringBasedModelInterpolator
         }
 
         // NOTE: Order counts here!
-        List<ValueSource> valueSources = new ArrayList<ValueSource>( 9 );
+        List<ValueSource> valueSources = new ArrayList<>( 9 );
 
         if ( projectDir != null )
         {
             ValueSource basedirValueSource = new PrefixedValueSourceWrapper( new AbstractValueSource( false )
             {
+                @Override
                 public Object getValue( String expression )
                 {
                     if ( "basedir".equals( expression ) )
@@ -146,11 +143,12 @@ public abstract class AbstractStringBasedModelInterpolator
 
             ValueSource baseUriValueSource = new PrefixedValueSourceWrapper( new AbstractValueSource( false )
             {
+                @Override
                 public Object getValue( String expression )
                 {
                     if ( "baseUri".equals( expression ) )
                     {
-                        return projectDir.getAbsoluteFile().toURI().toString();
+                        return projectDir.getAbsoluteFile().toPath().toUri().toASCIIString();
                     }
                     return null;
                 }
@@ -163,12 +161,27 @@ public abstract class AbstractStringBasedModelInterpolator
 
         valueSources.add( new MapBasedValueSource( config.getUserProperties() ) );
 
+        // Overwrite existing values in model properties. Otherwise it's not possible
+        // to define the version via command line: mvn -Drevision=6.5.7 ...
+        if ( config.getSystemProperties().containsKey( REVISION_PROPERTY ) )
+        {
+            modelProperties.put( REVISION_PROPERTY, config.getSystemProperties().get( REVISION_PROPERTY ) );
+        }
+        if ( config.getSystemProperties().containsKey( CHANGELIST_PROPERTY ) )
+        {
+            modelProperties.put( CHANGELIST_PROPERTY, config.getSystemProperties().get( CHANGELIST_PROPERTY ) );
+        }
+        if ( config.getSystemProperties().containsKey( SHA1_PROPERTY ) )
+        {
+            modelProperties.put( SHA1_PROPERTY, config.getSystemProperties().get( SHA1_PROPERTY ) );
+        }
         valueSources.add( new MapBasedValueSource( modelProperties ) );
 
         valueSources.add( new MapBasedValueSource( config.getSystemProperties() ) );
 
         valueSources.add( new AbstractValueSource( false )
         {
+            @Override
             public Object getValue( String expression )
             {
                 return config.getSystemProperties().getProperty( "env." + expression );
@@ -184,7 +197,7 @@ public abstract class AbstractStringBasedModelInterpolator
                                                                                final File projectDir,
                                                                                final ModelBuildingRequest config )
     {
-        List<InterpolationPostProcessor> processors = new ArrayList<InterpolationPostProcessor>( 2 );
+        List<InterpolationPostProcessor> processors = new ArrayList<>( 2 );
         if ( projectDir != null )
         {
             processors.add( new PathTranslatingPostProcessor( PROJECT_PREFIXES, TRANSLATED_PATH_EXPRESSIONS,
@@ -194,75 +207,9 @@ public abstract class AbstractStringBasedModelInterpolator
         return processors;
     }
 
-    protected String interpolateInternal( String src, List<? extends ValueSource> valueSources,
-                                          List<? extends InterpolationPostProcessor> postProcessors,
-                                          ModelProblemCollector problems )
+    protected RecursionInterceptor createRecursionInterceptor()
     {
-        if ( !src.contains( "${" ) )
-        {
-            return src;
-        }
-
-        String result = src;
-        synchronized ( this )
-        {
-
-            for ( ValueSource vs : valueSources )
-            {
-                interpolator.addValueSource( vs );
-            }
-
-            for ( InterpolationPostProcessor postProcessor : postProcessors )
-            {
-                interpolator.addPostProcessor( postProcessor );
-            }
-
-            try
-            {
-                try
-                {
-                    result = interpolator.interpolate( result, recursionInterceptor );
-                }
-                catch ( InterpolationException e )
-                {
-                    problems.add( new ModelProblemCollectorRequest( Severity.ERROR, Version.BASE )
-                        .setMessage( e.getMessage() ).setException( e ) );
-                }
-
-                interpolator.clearFeedback();
-            }
-            finally
-            {
-                for ( ValueSource vs : valueSources )
-                {
-                    interpolator.removeValuesSource( vs );
-                }
-
-                for ( InterpolationPostProcessor postProcessor : postProcessors )
-                {
-                    interpolator.removePostProcessor( postProcessor );
-                }
-            }
-        }
-
-        return result;
-    }
-
-    protected RecursionInterceptor getRecursionInterceptor()
-    {
-        return recursionInterceptor;
-    }
-
-    protected void setRecursionInterceptor( RecursionInterceptor recursionInterceptor )
-    {
-        this.recursionInterceptor = recursionInterceptor;
-    }
-
-    protected abstract Interpolator createInterpolator();
-
-    protected final Interpolator getInterpolator()
-    {
-        return interpolator;
+        return new PrefixAwareRecursionInterceptor( PROJECT_PREFIXES );
     }
 
 }

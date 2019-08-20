@@ -22,16 +22,22 @@ package org.apache.maven.execution;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Properties;
 
 import org.apache.maven.artifact.repository.ArtifactRepository;
+import org.apache.maven.eventspy.internal.EventSpyDispatcher;
 import org.apache.maven.model.Profile;
 import org.apache.maven.project.DefaultProjectBuildingRequest;
 import org.apache.maven.project.ProjectBuildingRequest;
+import org.apache.maven.properties.internal.SystemProperties;
 import org.apache.maven.settings.Mirror;
 import org.apache.maven.settings.Proxy;
 import org.apache.maven.settings.Server;
+import org.apache.maven.toolchain.model.ToolchainModel;
 import org.eclipse.aether.DefaultRepositoryCache;
 import org.eclipse.aether.RepositoryCache;
 import org.eclipse.aether.repository.WorkspaceReader;
@@ -49,6 +55,8 @@ public class DefaultMavenExecutionRequest
     private WorkspaceReader workspaceReader;
 
     private ArtifactRepository localRepository;
+
+    private EventSpyDispatcher eventSpyDispatcher;
 
     private File localRepositoryPath;
 
@@ -84,9 +92,13 @@ public class DefaultMavenExecutionRequest
 
     private File userToolchainsFile;
 
+    private File globalToolchainsFile;
+
     // ----------------------------------------------------------------------------
     // Request
     // ----------------------------------------------------------------------------
+
+    private File multiModuleProjectDirectory;
 
     private File basedir;
 
@@ -138,14 +150,18 @@ public class DefaultMavenExecutionRequest
 
     private String builderId = "singlethreaded";
 
+    private Map<String, List<ToolchainModel>> toolchains;
+
     /**
      * Suppress SNAPSHOT updates.
-     * 
+     *
      * @issue MNG-2681
      */
     private boolean noSnapshotUpdates;
 
-    private boolean useSimpleLocalRepositoryManager = false;
+    private boolean useLegacyLocalRepositoryManager = false;
+
+    private Map<String, Object> data;
 
     public DefaultMavenExecutionRequest()
     {
@@ -169,7 +185,9 @@ public class DefaultMavenExecutionRequest
         copy.setUserSettingsFile( original.getUserSettingsFile() );
         copy.setGlobalSettingsFile( original.getGlobalSettingsFile() );
         copy.setUserToolchainsFile( original.getUserToolchainsFile() );
-        copy.setBaseDirectory( ( original.getBaseDirectory() != null ) ? new File( original.getBaseDirectory() ) : null );
+        copy.setGlobalToolchainsFile( original.getGlobalToolchainsFile() );
+        copy.setBaseDirectory( ( original.getBaseDirectory() != null ) ? new File( original.getBaseDirectory() )
+                                                                       : null );
         copy.setGoals( original.getGoals() );
         copy.setRecursive( original.isRecursive() );
         copy.setPom( original.getPom() );
@@ -188,9 +206,12 @@ public class DefaultMavenExecutionRequest
         copy.setWorkspaceReader( original.getWorkspaceReader() );
         copy.setNoSnapshotUpdates( original.isNoSnapshotUpdates() );
         copy.setExecutionListener( original.getExecutionListener() );
+        copy.setUseLegacyLocalRepository( original.isUseLegacyLocalRepository() );
+        copy.setBuilderId( original.getBuilderId() );
         return copy;
     }
 
+    @Override
     public String getBaseDirectory()
     {
         if ( basedir == null )
@@ -201,25 +222,29 @@ public class DefaultMavenExecutionRequest
         return basedir.getAbsolutePath();
     }
 
+    @Override
     public ArtifactRepository getLocalRepository()
     {
         return localRepository;
     }
 
+    @Override
     public File getLocalRepositoryPath()
     {
         return localRepositoryPath;
     }
 
+    @Override
     public List<String> getGoals()
     {
         if ( goals == null )
         {
-            goals = new ArrayList<String>();
+            goals = new ArrayList<>();
         }
         return goals;
     }
 
+    @Override
     public Properties getSystemProperties()
     {
         if ( systemProperties == null )
@@ -230,6 +255,7 @@ public class DefaultMavenExecutionRequest
         return systemProperties;
     }
 
+    @Override
     public Properties getUserProperties()
     {
         if ( userProperties == null )
@@ -240,66 +266,76 @@ public class DefaultMavenExecutionRequest
         return userProperties;
     }
 
+    @Override
     public File getPom()
     {
         return pom;
     }
 
+    @Override
     public String getReactorFailureBehavior()
     {
         return reactorFailureBehavior;
     }
 
+    @Override
     public List<String> getSelectedProjects()
     {
         if ( selectedProjects == null )
         {
-            selectedProjects = new ArrayList<String>();
+            selectedProjects = new ArrayList<>();
         }
 
         return selectedProjects;
     }
 
+    @Override
     public List<String> getExcludedProjects()
     {
         if ( excludedProjects == null )
         {
-            excludedProjects = new ArrayList<String>();
+            excludedProjects = new ArrayList<>();
         }
 
         return excludedProjects;
     }
 
+    @Override
     public String getResumeFrom()
     {
         return resumeFrom;
     }
 
+    @Override
     public String getMakeBehavior()
     {
         return makeBehavior;
     }
 
+    @Override
     public Date getStartTime()
     {
         return startTime;
     }
 
+    @Override
     public boolean isShowErrors()
     {
         return showErrors;
     }
 
+    @Override
     public boolean isInteractiveMode()
     {
         return interactiveMode;
     }
 
+    @Override
     public MavenExecutionRequest setActiveProfiles( List<String> activeProfiles )
     {
         if ( activeProfiles != null )
         {
-            this.activeProfiles = new ArrayList<String>( activeProfiles );
+            this.activeProfiles = new ArrayList<>( activeProfiles );
         }
         else
         {
@@ -309,11 +345,12 @@ public class DefaultMavenExecutionRequest
         return this;
     }
 
+    @Override
     public MavenExecutionRequest setInactiveProfiles( List<String> inactiveProfiles )
     {
         if ( inactiveProfiles != null )
         {
-            this.inactiveProfiles = new ArrayList<String>( inactiveProfiles );
+            this.inactiveProfiles = new ArrayList<>( inactiveProfiles );
         }
         else
         {
@@ -323,11 +360,12 @@ public class DefaultMavenExecutionRequest
         return this;
     }
 
+    @Override
     public MavenExecutionRequest setRemoteRepositories( List<ArtifactRepository> remoteRepositories )
     {
         if ( remoteRepositories != null )
         {
-            this.remoteRepositories = new ArrayList<ArtifactRepository>( remoteRepositories );
+            this.remoteRepositories = new ArrayList<>( remoteRepositories );
         }
         else
         {
@@ -337,11 +375,12 @@ public class DefaultMavenExecutionRequest
         return this;
     }
 
+    @Override
     public MavenExecutionRequest setPluginArtifactRepositories( List<ArtifactRepository> pluginArtifactRepositories )
     {
         if ( pluginArtifactRepositories != null )
         {
-            this.pluginArtifactRepositories = new ArrayList<ArtifactRepository>( pluginArtifactRepositories );
+            this.pluginArtifactRepositories = new ArrayList<>( pluginArtifactRepositories );
         }
         else
         {
@@ -356,54 +395,63 @@ public class DefaultMavenExecutionRequest
         this.projectBuildingRequest = projectBuildingConfiguration;
     }
 
+    @Override
     public List<String> getActiveProfiles()
     {
         if ( activeProfiles == null )
         {
-            activeProfiles = new ArrayList<String>();
+            activeProfiles = new ArrayList<>();
         }
         return activeProfiles;
     }
 
+    @Override
     public List<String> getInactiveProfiles()
     {
         if ( inactiveProfiles == null )
         {
-            inactiveProfiles = new ArrayList<String>();
+            inactiveProfiles = new ArrayList<>();
         }
         return inactiveProfiles;
     }
 
+    @Override
     public TransferListener getTransferListener()
     {
         return transferListener;
     }
 
+    @Override
     public int getLoggingLevel()
     {
         return loggingLevel;
     }
 
+    @Override
     public boolean isOffline()
     {
         return offline;
     }
 
+    @Override
     public boolean isUpdateSnapshots()
     {
         return updateSnapshots;
     }
 
+    @Override
     public boolean isNoSnapshotUpdates()
     {
         return noSnapshotUpdates;
     }
 
+    @Override
     public String getGlobalChecksumPolicy()
     {
         return globalChecksumPolicy;
     }
 
+    @Override
     public boolean isRecursive()
     {
         return recursive;
@@ -413,6 +461,7 @@ public class DefaultMavenExecutionRequest
     //
     // ----------------------------------------------------------------------
 
+    @Override
     public MavenExecutionRequest setBaseDirectory( File basedir )
     {
         this.basedir = basedir;
@@ -420,6 +469,7 @@ public class DefaultMavenExecutionRequest
         return this;
     }
 
+    @Override
     public MavenExecutionRequest setStartTime( Date startTime )
     {
         this.startTime = startTime;
@@ -427,6 +477,7 @@ public class DefaultMavenExecutionRequest
         return this;
     }
 
+    @Override
     public MavenExecutionRequest setShowErrors( boolean showErrors )
     {
         this.showErrors = showErrors;
@@ -434,11 +485,12 @@ public class DefaultMavenExecutionRequest
         return this;
     }
 
+    @Override
     public MavenExecutionRequest setGoals( List<String> goals )
     {
         if ( goals != null )
         {
-            this.goals = new ArrayList<String>( goals );
+            this.goals = new ArrayList<>( goals );
         }
         else
         {
@@ -448,6 +500,7 @@ public class DefaultMavenExecutionRequest
         return this;
     }
 
+    @Override
     public MavenExecutionRequest setLocalRepository( ArtifactRepository localRepository )
     {
         this.localRepository = localRepository;
@@ -460,6 +513,7 @@ public class DefaultMavenExecutionRequest
         return this;
     }
 
+    @Override
     public MavenExecutionRequest setLocalRepositoryPath( File localRepository )
     {
         localRepositoryPath = localRepository;
@@ -467,6 +521,7 @@ public class DefaultMavenExecutionRequest
         return this;
     }
 
+    @Override
     public MavenExecutionRequest setLocalRepositoryPath( String localRepository )
     {
         localRepositoryPath = ( localRepository != null ) ? new File( localRepository ) : null;
@@ -474,12 +529,12 @@ public class DefaultMavenExecutionRequest
         return this;
     }
 
+    @Override
     public MavenExecutionRequest setSystemProperties( Properties properties )
     {
         if ( properties != null )
         {
-            this.systemProperties = new Properties();
-            this.systemProperties.putAll( properties );
+            this.systemProperties = SystemProperties.copyProperties( properties );
         }
         else
         {
@@ -489,6 +544,7 @@ public class DefaultMavenExecutionRequest
         return this;
     }
 
+    @Override
     public MavenExecutionRequest setUserProperties( Properties userProperties )
     {
         if ( userProperties != null )
@@ -504,6 +560,7 @@ public class DefaultMavenExecutionRequest
         return this;
     }
 
+    @Override
     public MavenExecutionRequest setReactorFailureBehavior( String failureBehavior )
     {
         reactorFailureBehavior = failureBehavior;
@@ -511,11 +568,12 @@ public class DefaultMavenExecutionRequest
         return this;
     }
 
+    @Override
     public MavenExecutionRequest setSelectedProjects( List<String> selectedProjects )
     {
         if ( selectedProjects != null )
         {
-            this.selectedProjects = new ArrayList<String>( selectedProjects );
+            this.selectedProjects = new ArrayList<>( selectedProjects );
         }
         else
         {
@@ -525,11 +583,12 @@ public class DefaultMavenExecutionRequest
         return this;
     }
 
+    @Override
     public MavenExecutionRequest setExcludedProjects( List<String> excludedProjects )
     {
         if ( excludedProjects != null )
         {
-            this.excludedProjects = new ArrayList<String>( excludedProjects );
+            this.excludedProjects = new ArrayList<>( excludedProjects );
         }
         else
         {
@@ -539,6 +598,7 @@ public class DefaultMavenExecutionRequest
         return this;
     }
 
+    @Override
     public MavenExecutionRequest setResumeFrom( String project )
     {
         this.resumeFrom = project;
@@ -546,6 +606,7 @@ public class DefaultMavenExecutionRequest
         return this;
     }
 
+    @Override
     public MavenExecutionRequest setMakeBehavior( String makeBehavior )
     {
         this.makeBehavior = makeBehavior;
@@ -553,6 +614,7 @@ public class DefaultMavenExecutionRequest
         return this;
     }
 
+    @Override
     public MavenExecutionRequest addActiveProfile( String profile )
     {
         if ( !getActiveProfiles().contains( profile ) )
@@ -563,6 +625,7 @@ public class DefaultMavenExecutionRequest
         return this;
     }
 
+    @Override
     public MavenExecutionRequest addInactiveProfile( String profile )
     {
         if ( !getInactiveProfiles().contains( profile ) )
@@ -573,6 +636,7 @@ public class DefaultMavenExecutionRequest
         return this;
     }
 
+    @Override
     public MavenExecutionRequest addActiveProfiles( List<String> profiles )
     {
         for ( String profile : profiles )
@@ -583,6 +647,7 @@ public class DefaultMavenExecutionRequest
         return this;
     }
 
+    @Override
     public MavenExecutionRequest addInactiveProfiles( List<String> profiles )
     {
         for ( String profile : profiles )
@@ -606,6 +671,7 @@ public class DefaultMavenExecutionRequest
     }
 
     /** @deprecated use {@link #setPom(File)} */
+    @Deprecated
     public MavenExecutionRequest setPomFile( String pomFilename )
     {
         if ( pomFilename != null )
@@ -616,6 +682,7 @@ public class DefaultMavenExecutionRequest
         return this;
     }
 
+    @Override
     public MavenExecutionRequest setPom( File pom )
     {
         this.pom = pom;
@@ -623,6 +690,7 @@ public class DefaultMavenExecutionRequest
         return this;
     }
 
+    @Override
     public MavenExecutionRequest setInteractiveMode( boolean interactive )
     {
         interactiveMode = interactive;
@@ -630,6 +698,7 @@ public class DefaultMavenExecutionRequest
         return this;
     }
 
+    @Override
     public MavenExecutionRequest setTransferListener( TransferListener transferListener )
     {
         this.transferListener = transferListener;
@@ -637,6 +706,7 @@ public class DefaultMavenExecutionRequest
         return this;
     }
 
+    @Override
     public MavenExecutionRequest setLoggingLevel( int loggingLevel )
     {
         this.loggingLevel = loggingLevel;
@@ -644,6 +714,7 @@ public class DefaultMavenExecutionRequest
         return this;
     }
 
+    @Override
     public MavenExecutionRequest setOffline( boolean offline )
     {
         this.offline = offline;
@@ -651,6 +722,7 @@ public class DefaultMavenExecutionRequest
         return this;
     }
 
+    @Override
     public MavenExecutionRequest setUpdateSnapshots( boolean updateSnapshots )
     {
         this.updateSnapshots = updateSnapshots;
@@ -658,6 +730,7 @@ public class DefaultMavenExecutionRequest
         return this;
     }
 
+    @Override
     public MavenExecutionRequest setNoSnapshotUpdates( boolean noSnapshotUpdates )
     {
         this.noSnapshotUpdates = noSnapshotUpdates;
@@ -665,6 +738,7 @@ public class DefaultMavenExecutionRequest
         return this;
     }
 
+    @Override
     public MavenExecutionRequest setGlobalChecksumPolicy( String globalChecksumPolicy )
     {
         this.globalChecksumPolicy = globalChecksumPolicy;
@@ -676,20 +750,22 @@ public class DefaultMavenExecutionRequest
     // Settings equivalents
     // ----------------------------------------------------------------------------
 
+    @Override
     public List<Proxy> getProxies()
     {
         if ( proxies == null )
         {
-            proxies = new ArrayList<Proxy>();
+            proxies = new ArrayList<>();
         }
         return proxies;
     }
 
+    @Override
     public MavenExecutionRequest setProxies( List<Proxy> proxies )
     {
         if ( proxies != null )
         {
-            this.proxies = new ArrayList<Proxy>( proxies );
+            this.proxies = new ArrayList<>( proxies );
         }
         else
         {
@@ -699,12 +775,10 @@ public class DefaultMavenExecutionRequest
         return this;
     }
 
+    @Override
     public MavenExecutionRequest addProxy( Proxy proxy )
     {
-        if ( proxy == null )
-        {
-            throw new IllegalArgumentException( "proxy missing" );
-        }
+        Objects.requireNonNull( proxy, "proxy cannot be null" );
 
         for ( Proxy p : getProxies() )
         {
@@ -719,20 +793,22 @@ public class DefaultMavenExecutionRequest
         return this;
     }
 
+    @Override
     public List<Server> getServers()
     {
         if ( servers == null )
         {
-            servers = new ArrayList<Server>();
+            servers = new ArrayList<>();
         }
         return servers;
     }
 
+    @Override
     public MavenExecutionRequest setServers( List<Server> servers )
     {
         if ( servers != null )
         {
-            this.servers = new ArrayList<Server>( servers );
+            this.servers = new ArrayList<>( servers );
         }
         else
         {
@@ -742,12 +818,10 @@ public class DefaultMavenExecutionRequest
         return this;
     }
 
+    @Override
     public MavenExecutionRequest addServer( Server server )
     {
-        if ( server == null )
-        {
-            throw new IllegalArgumentException( "server missing" );
-        }
+        Objects.requireNonNull( server, "server cannot be null" );
 
         for ( Server p : getServers() )
         {
@@ -762,20 +836,22 @@ public class DefaultMavenExecutionRequest
         return this;
     }
 
+    @Override
     public List<Mirror> getMirrors()
     {
         if ( mirrors == null )
         {
-            mirrors = new ArrayList<Mirror>();
+            mirrors = new ArrayList<>();
         }
         return mirrors;
     }
 
+    @Override
     public MavenExecutionRequest setMirrors( List<Mirror> mirrors )
     {
         if ( mirrors != null )
         {
-            this.mirrors = new ArrayList<Mirror>( mirrors );
+            this.mirrors = new ArrayList<>( mirrors );
         }
         else
         {
@@ -785,12 +861,10 @@ public class DefaultMavenExecutionRequest
         return this;
     }
 
+    @Override
     public MavenExecutionRequest addMirror( Mirror mirror )
     {
-        if ( mirror == null )
-        {
-            throw new IllegalArgumentException( "mirror missing" );
-        }
+        Objects.requireNonNull( mirror, "mirror cannot be null" );
 
         for ( Mirror p : getMirrors() )
         {
@@ -805,20 +879,22 @@ public class DefaultMavenExecutionRequest
         return this;
     }
 
+    @Override
     public List<Profile> getProfiles()
     {
         if ( profiles == null )
         {
-            profiles = new ArrayList<Profile>();
+            profiles = new ArrayList<>();
         }
         return profiles;
     }
 
+    @Override
     public MavenExecutionRequest setProfiles( List<Profile> profiles )
     {
         if ( profiles != null )
         {
-            this.profiles = new ArrayList<Profile>( profiles );
+            this.profiles = new ArrayList<>( profiles );
         }
         else
         {
@@ -828,21 +904,23 @@ public class DefaultMavenExecutionRequest
         return this;
     }
 
+    @Override
     public List<String> getPluginGroups()
     {
         if ( pluginGroups == null )
         {
-            pluginGroups = new ArrayList<String>();
+            pluginGroups = new ArrayList<>();
         }
 
         return pluginGroups;
     }
 
+    @Override
     public MavenExecutionRequest setPluginGroups( List<String> pluginGroups )
     {
         if ( pluginGroups != null )
         {
-            this.pluginGroups = new ArrayList<String>( pluginGroups );
+            this.pluginGroups = new ArrayList<>( pluginGroups );
         }
         else
         {
@@ -852,6 +930,7 @@ public class DefaultMavenExecutionRequest
         return this;
     }
 
+    @Override
     public MavenExecutionRequest addPluginGroup( String pluginGroup )
     {
         if ( !getPluginGroups().contains( pluginGroup ) )
@@ -862,6 +941,7 @@ public class DefaultMavenExecutionRequest
         return this;
     }
 
+    @Override
     public MavenExecutionRequest addPluginGroups( List<String> pluginGroups )
     {
         for ( String pluginGroup : pluginGroups )
@@ -872,6 +952,7 @@ public class DefaultMavenExecutionRequest
         return this;
     }
 
+    @Override
     public MavenExecutionRequest setRecursive( boolean recursive )
     {
         this.recursive = recursive;
@@ -882,11 +963,13 @@ public class DefaultMavenExecutionRequest
     // calculated from request attributes.
     private ProjectBuildingRequest projectBuildingRequest;
 
+    @Override
     public boolean isProjectPresent()
     {
         return isProjectPresent;
     }
 
+    @Override
     public MavenExecutionRequest setProjectPresent( boolean projectPresent )
     {
         isProjectPresent = projectPresent;
@@ -896,11 +979,13 @@ public class DefaultMavenExecutionRequest
 
     // Settings files
 
+    @Override
     public File getUserSettingsFile()
     {
         return userSettingsFile;
     }
 
+    @Override
     public MavenExecutionRequest setUserSettingsFile( File userSettingsFile )
     {
         this.userSettingsFile = userSettingsFile;
@@ -908,11 +993,13 @@ public class DefaultMavenExecutionRequest
         return this;
     }
 
+    @Override
     public File getGlobalSettingsFile()
     {
         return globalSettingsFile;
     }
 
+    @Override
     public MavenExecutionRequest setGlobalSettingsFile( File globalSettingsFile )
     {
         this.globalSettingsFile = globalSettingsFile;
@@ -920,11 +1007,13 @@ public class DefaultMavenExecutionRequest
         return this;
     }
 
+    @Override
     public File getUserToolchainsFile()
     {
         return userToolchainsFile;
     }
 
+    @Override
     public MavenExecutionRequest setUserToolchainsFile( File userToolchainsFile )
     {
         this.userToolchainsFile = userToolchainsFile;
@@ -932,6 +1021,20 @@ public class DefaultMavenExecutionRequest
         return this;
     }
 
+    @Override
+    public File getGlobalToolchainsFile()
+    {
+        return globalToolchainsFile;
+    }
+
+    @Override
+    public MavenExecutionRequest setGlobalToolchainsFile( File globalToolchainsFile )
+    {
+        this.globalToolchainsFile = globalToolchainsFile;
+        return this;
+    }
+
+    @Override
     public MavenExecutionRequest addRemoteRepository( ArtifactRepository repository )
     {
         for ( ArtifactRepository repo : getRemoteRepositories() )
@@ -947,15 +1050,17 @@ public class DefaultMavenExecutionRequest
         return this;
     }
 
+    @Override
     public List<ArtifactRepository> getRemoteRepositories()
     {
         if ( remoteRepositories == null )
         {
-            remoteRepositories = new ArrayList<ArtifactRepository>();
+            remoteRepositories = new ArrayList<>();
         }
         return remoteRepositories;
     }
 
+    @Override
     public MavenExecutionRequest addPluginArtifactRepository( ArtifactRepository repository )
     {
         for ( ArtifactRepository repo : getPluginArtifactRepositories() )
@@ -971,16 +1076,18 @@ public class DefaultMavenExecutionRequest
         return this;
     }
 
+    @Override
     public List<ArtifactRepository> getPluginArtifactRepositories()
     {
         if ( pluginArtifactRepositories == null )
         {
-            pluginArtifactRepositories = new ArrayList<ArtifactRepository>();
+            pluginArtifactRepositories = new ArrayList<>();
         }
         return pluginArtifactRepositories;
     }
 
-    // TODO: this does not belong here.
+    // TODO this does not belong here.
+    @Override
     public ProjectBuildingRequest getProjectBuildingRequest()
     {
         if ( projectBuildingRequest == null )
@@ -1001,12 +1108,10 @@ public class DefaultMavenExecutionRequest
         return projectBuildingRequest;
     }
 
+    @Override
     public MavenExecutionRequest addProfile( Profile profile )
     {
-        if ( profile == null )
-        {
-            throw new IllegalArgumentException( "profile missing" );
-        }
+        Objects.requireNonNull( profile, "profile cannot be null" );
 
         for ( Profile p : getProfiles() )
         {
@@ -1021,11 +1126,13 @@ public class DefaultMavenExecutionRequest
         return this;
     }
 
+    @Override
     public RepositoryCache getRepositoryCache()
     {
         return repositoryCache;
     }
 
+    @Override
     public MavenExecutionRequest setRepositoryCache( RepositoryCache repositoryCache )
     {
         this.repositoryCache = repositoryCache;
@@ -1033,11 +1140,13 @@ public class DefaultMavenExecutionRequest
         return this;
     }
 
+    @Override
     public ExecutionListener getExecutionListener()
     {
         return executionListener;
     }
 
+    @Override
     public MavenExecutionRequest setExecutionListener( ExecutionListener executionListener )
     {
         this.executionListener = executionListener;
@@ -1045,68 +1154,133 @@ public class DefaultMavenExecutionRequest
         return this;
     }
 
+    @Override
     public void setDegreeOfConcurrency( final int degreeOfConcurrency )
     {
         this.degreeOfConcurrency = degreeOfConcurrency;
     }
 
+    @Override
     public int getDegreeOfConcurrency()
     {
         return degreeOfConcurrency;
     }
 
+    @Override
     public WorkspaceReader getWorkspaceReader()
     {
         return workspaceReader;
     }
 
+    @Override
     public MavenExecutionRequest setWorkspaceReader( WorkspaceReader workspaceReader )
     {
         this.workspaceReader = workspaceReader;
         return this;
     }
 
+    @Override
     public boolean isCacheTransferError()
     {
         return cacheTransferError;
     }
 
+    @Override
     public MavenExecutionRequest setCacheTransferError( boolean cacheTransferError )
     {
         this.cacheTransferError = cacheTransferError;
         return this;
     }
 
+    @Override
     public boolean isCacheNotFound()
     {
         return cacheNotFound;
     }
 
+    @Override
     public MavenExecutionRequest setCacheNotFound( boolean cacheNotFound )
     {
         this.cacheNotFound = cacheNotFound;
         return this;
     }
 
+    @Override
     public boolean isUseLegacyLocalRepository()
     {
-        return this.useSimpleLocalRepositoryManager;
+        return this.useLegacyLocalRepositoryManager;
     }
 
-    public MavenExecutionRequest setUseLegacyLocalRepository( boolean useSimpleLocalRepositoryManager )
+    @Override
+    public MavenExecutionRequest setUseLegacyLocalRepository( boolean useLegacyLocalRepositoryManager )
     {
-        this.useSimpleLocalRepositoryManager = useSimpleLocalRepositoryManager;
+        this.useLegacyLocalRepositoryManager = useLegacyLocalRepositoryManager;
         return this;
     }
 
+    @Override
     public MavenExecutionRequest setBuilderId( String builderId )
     {
         this.builderId = builderId;
         return this;
     }
 
+    @Override
     public String getBuilderId()
     {
         return builderId;
+    }
+
+    @Override
+    public Map<String, List<ToolchainModel>> getToolchains()
+    {
+        if ( toolchains == null )
+        {
+            toolchains = new HashMap<>();
+        }
+        return toolchains;
+    }
+
+    @Override
+    public MavenExecutionRequest setToolchains( Map<String, List<ToolchainModel>> toolchains )
+    {
+        this.toolchains = toolchains;
+        return this;
+    }
+
+    @Override
+    public void setMultiModuleProjectDirectory( File directory )
+    {
+        this.multiModuleProjectDirectory = directory;
+    }
+
+    @Override
+    public File getMultiModuleProjectDirectory()
+    {
+        return multiModuleProjectDirectory;
+    }
+
+    @Override
+    public MavenExecutionRequest setEventSpyDispatcher( EventSpyDispatcher eventSpyDispatcher )
+    {
+        this.eventSpyDispatcher = eventSpyDispatcher;
+        return this;
+    }
+
+    @Override
+    public EventSpyDispatcher getEventSpyDispatcher()
+    {
+        return eventSpyDispatcher;
+    }
+
+    @Override
+    public Map<String, Object> getData()
+    {
+        if ( data == null )
+        {
+            data = new HashMap<>();
+        }
+
+        return data;
     }
 }

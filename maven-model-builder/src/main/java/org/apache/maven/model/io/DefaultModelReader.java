@@ -25,33 +25,35 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
 import java.util.Map;
+import java.util.Objects;
+
+import javax.inject.Named;
+import javax.inject.Singleton;
 
 import org.apache.maven.model.InputSource;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
 import org.apache.maven.model.io.xpp3.MavenXpp3ReaderEx;
-import org.codehaus.plexus.component.annotations.Component;
-import org.codehaus.plexus.util.IOUtil;
 import org.codehaus.plexus.util.ReaderFactory;
+import org.codehaus.plexus.util.xml.XmlStreamReader;
 import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
 
 /**
  * Handles deserialization of a model from some kind of textual format like XML.
- * 
+ *
  * @author Benjamin Bentmann
  */
-@Component( role = ModelReader.class )
+@Named
+@Singleton
 public class DefaultModelReader
     implements ModelReader
 {
 
+    @Override
     public Model read( File input, Map<String, ?> options )
         throws IOException
     {
-        if ( input == null )
-        {
-            throw new IllegalArgumentException( "input file missing" );
-        }
+        Objects.requireNonNull( input, "input cannot be null" );
 
         Model model = read( new FileInputStream( input ), options );
 
@@ -60,39 +62,27 @@ public class DefaultModelReader
         return model;
     }
 
+    @Override
     public Model read( Reader input, Map<String, ?> options )
         throws IOException
     {
-        if ( input == null )
-        {
-            throw new IllegalArgumentException( "input reader missing" );
-        }
+        Objects.requireNonNull( input, "input cannot be null" );
 
-        try
+        try ( final Reader in = input )
         {
-            return read( input, isStrict( options ), getSource( options ) );
-        }
-        finally
-        {
-            IOUtil.close( input );
+            return read( in, isStrict( options ), getSource( options ) );
         }
     }
 
+    @Override
     public Model read( InputStream input, Map<String, ?> options )
         throws IOException
     {
-        if ( input == null )
-        {
-            throw new IllegalArgumentException( "input stream missing" );
-        }
+        Objects.requireNonNull( input, "input cannot be null" );
 
-        try
+        try ( final XmlStreamReader in = ReaderFactory.newXmlReader( input ) )
         {
-            return read( ReaderFactory.newXmlReader( input ), isStrict( options ), getSource( options ) );
-        }
-        finally
-        {
-            IOUtil.close( input );
+            return read( in, isStrict( options ), getSource( options ) );
         }
     }
 

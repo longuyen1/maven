@@ -31,7 +31,7 @@ import org.codehaus.plexus.util.xml.Xpp3Dom;
 
 /**
  * An attribute iterator for JXPath to support <code>Xpp3Dom</code>.
- * 
+ *
  * @author Benjamin Bentmann
  */
 class Xpp3DomAttributeIterator
@@ -53,7 +53,7 @@ class Xpp3DomAttributeIterator
         this.parent = parent;
         this.node = (Xpp3Dom) parent.getNode();
 
-        Map<String, String> map = new LinkedHashMap<String, String>();
+        Map<String, String> map = new LinkedHashMap<>();
         for ( String name : this.node.getAttributeNames() )
         {
             if ( name.equals( qname.getName() ) || "*".equals( qname.getName() ) )
@@ -62,7 +62,7 @@ class Xpp3DomAttributeIterator
                 map.put( name, value );
             }
         }
-        this.attributes = new ArrayList<Map.Entry<String, String>>( map.entrySet() );
+        this.attributes = new ArrayList<>( map.entrySet() );
     }
 
     public NodePointer getNodePointer()

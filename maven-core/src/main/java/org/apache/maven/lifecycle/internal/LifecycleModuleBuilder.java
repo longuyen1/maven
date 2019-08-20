@@ -22,7 +22,6 @@ package org.apache.maven.lifecycle.internal;
 import java.util.HashSet;
 import java.util.List;
 
-import org.apache.maven.SessionScope;
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.execution.BuildSuccess;
 import org.apache.maven.execution.ExecutionEvent;
@@ -33,18 +32,20 @@ import org.apache.maven.lifecycle.MavenExecutionPlan;
 import org.apache.maven.lifecycle.internal.builder.BuilderCommon;
 import org.apache.maven.plugin.MojoExecution;
 import org.apache.maven.project.MavenProject;
+import org.apache.maven.session.scope.internal.SessionScope;
 import org.codehaus.plexus.component.annotations.Component;
 import org.codehaus.plexus.component.annotations.Requirement;
 
 /**
+ * <p>
  * Builds one or more lifecycles for a full module
+ * </p>
+ * <strong>NOTE:</strong> This class is not part of any public api and can be changed or deleted without prior notice.
  * 
  * @since 3.0
  * @author Benjamin Bentmann
  * @author Jason van Zyl
  * @author Kristian Rosenvold (extracted class)
- *         <p/>
- *         NOTE: This class is not part of any public api and can be changed or deleted without prior notice.
  */
 @Component( role = LifecycleModuleBuilder.class )
 public class LifecycleModuleBuilder
@@ -88,8 +89,8 @@ public class LifecycleModuleBuilder
         long buildStartTime = System.currentTimeMillis();
 
         // session may be different from rootSession seeded in DefaultMaven
-        // explicitly seed the right session here to make sure it is used by Guice 
-        sessionScope.enter();
+        // explicitly seed the right session here to make sure it is used by Guice
+        sessionScope.enter( reactorContext.getSessionScopeMemento() );
         sessionScope.seed( MavenSession.class, session );
         try
         {
@@ -120,16 +121,27 @@ public class LifecycleModuleBuilder
             projectExecutionListener.afterProjectExecutionSuccess( new ProjectExecutionEvent( session, currentProject,
                                                                                               mojoExecutions ) );
 
-            reactorContext.getResult().addBuildSummary( new BuildSuccess( currentProject, buildEndTime - buildStartTime ) );
+            reactorContext.getResult().addBuildSummary( new BuildSuccess( currentProject,
+                                                                          buildEndTime - buildStartTime ) );
 
             eventCatapult.fire( ExecutionEvent.Type.ProjectSucceeded, session, null );
         }
-        catch ( Exception e )
+        catch ( Throwable t )
         {
-            builderCommon.handleBuildError( reactorContext, rootSession, session, currentProject, e, buildStartTime );
+            builderCommon.handleBuildError( reactorContext, rootSession, session, currentProject, t, buildStartTime );
 
             projectExecutionListener.afterProjectExecutionFailure( new ProjectExecutionEvent( session, currentProject,
-                                                                                              e ) );
+                                                                                              t ) );
+
+            // rethrow original errors and runtime exceptions
+            if ( t instanceof RuntimeException )
+            {
+                throw (RuntimeException) t;
+            }
+            if ( t instanceof Error )
+            {
+                throw (Error) t;
+            }
         }
         finally
         {

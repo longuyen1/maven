@@ -25,19 +25,13 @@ under the License.
   <parent>
     <groupId>org.apache.maven</groupId>
     <artifactId>maven</artifactId>
-    <version>3.2.4-SNAPSHOT</version>
+    <version>3.6.2-SNAPSHOT</version>
   </parent>
 
   <artifactId>maven-plugin-api</artifactId>
 
   <name>Maven Plugin API</name>
   <description>The API for plugins - Mojos - development.</description>
-
-  <scm><!-- remove when git scm url format can accept artifact-id at the end, as automatically inherited -->
-    <connection>scm:git:https://git-wip-us.apache.org/repos/asf/maven.git</connection>
-    <developerConnection>scm:git:https://git-wip-us.apache.org/repos/asf/maven.git</developerConnection>
-    <tag>HEAD</tag>
-  </scm>
 
   <dependencies>
     <dependency>
@@ -58,6 +52,14 @@ under the License.
       <groupId>org.eclipse.sisu</groupId>
       <artifactId>org.eclipse.sisu.plexus</artifactId>
     </dependency>
+    <dependency>
+      <groupId>org.codehaus.plexus</groupId>
+      <artifactId>plexus-utils</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.codehaus.plexus</groupId>
+      <artifactId>plexus-classworlds</artifactId>
+    </dependency>
   </dependencies>
 
   <build>
@@ -73,7 +75,7 @@ under the License.
         </configuration>
         <executions>
           <execution>
-            <id>plugin-site-doc</id>
+            <id>modello-site-doc</id>
             <phase>pre-site</phase>
             <goals>
               <goal>xdoc</goal>

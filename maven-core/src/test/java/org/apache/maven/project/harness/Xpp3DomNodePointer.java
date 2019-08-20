@@ -30,7 +30,7 @@ import org.codehaus.plexus.util.xml.Xpp3Dom;
 
 /**
  * A node pointer for JXPath to support <code>Xpp3Dom</code>.
- * 
+ *
  * @author Benjamin Bentmann
  */
 class Xpp3DomNodePointer
@@ -89,7 +89,7 @@ class Xpp3DomNodePointer
         }
         else
         {
-            List<Object> children = new ArrayList<Object>();
+            List<Object> children = new ArrayList<>();
             for ( int i = 0; i < node.getChildCount(); i++ )
             {
                 children.add( getValue( node.getChild( i ) ) );

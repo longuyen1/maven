@@ -19,60 +19,28 @@ package org.apache.maven.model.building;
  * under the License.
  */
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.net.URL;
+
+import org.apache.maven.building.UrlSource;
 
 /**
  * Wraps an ordinary {@link URL} as a model source.
- * 
+ *
  * @author Benjamin Bentmann
+ * 
+ * @deprecated instead use {@link UrlSource}
  */
-public class UrlModelSource
+@Deprecated
+public class UrlModelSource extends UrlSource
     implements ModelSource
 {
-
-    private URL pomUrl;
-
     /**
      * Creates a new model source backed by the specified URL.
-     * 
+     *
      * @param pomUrl The POM file, must not be {@code null}.
      */
     public UrlModelSource( URL pomUrl )
     {
-        if ( pomUrl == null )
-        {
-            throw new IllegalArgumentException( "no POM URL specified" );
-        }
-        this.pomUrl = pomUrl;
+        super( pomUrl );
     }
-
-    public InputStream getInputStream()
-        throws IOException
-    {
-        return pomUrl.openStream();
-    }
-
-    public String getLocation()
-    {
-        return pomUrl.toString();
-    }
-
-    /**
-     * Gets the POM URL of this model source.
-     * 
-     * @return The underlying POM URL, never {@code null}.
-     */
-    public URL getPomUrl()
-    {
-        return pomUrl;
-    }
-
-    @Override
-    public String toString()
-    {
-        return getLocation();
-    }
-
 }

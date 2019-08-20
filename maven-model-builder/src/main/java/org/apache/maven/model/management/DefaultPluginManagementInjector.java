@@ -25,6 +25,9 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import javax.inject.Named;
+import javax.inject.Singleton;
+
 import org.apache.maven.model.Build;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.Plugin;
@@ -34,25 +37,30 @@ import org.apache.maven.model.PluginManagement;
 import org.apache.maven.model.building.ModelBuildingRequest;
 import org.apache.maven.model.building.ModelProblemCollector;
 import org.apache.maven.model.merge.MavenModelMerger;
-import org.codehaus.plexus.component.annotations.Component;
 
 /**
  * Handles injection of plugin management into the model.
  *
  * @author Benjamin Bentmann
  */
-@Component( role = PluginManagementInjector.class )
+@SuppressWarnings( { "checkstyle:methodname" } )
+@Named
+@Singleton
 public class DefaultPluginManagementInjector
     implements PluginManagementInjector
 {
 
     private ManagementModelMerger merger = new ManagementModelMerger();
 
+    @Override
     public void injectManagement( Model model, ModelBuildingRequest request, ModelProblemCollector problems )
     {
         merger.mergeManagedBuildPlugins( model );
     }
 
+    /**
+     * ManagementModelMerger
+     */
     protected static class ManagementModelMerger
         extends MavenModelMerger
     {
@@ -65,19 +73,19 @@ public class DefaultPluginManagementInjector
                 PluginManagement pluginManagement = build.getPluginManagement();
                 if ( pluginManagement != null )
                 {
-                    mergePluginContainer_Plugins( build, pluginManagement );
+                    mergePluginContainerPlugins( build, pluginManagement );
                 }
             }
         }
 
-        private void mergePluginContainer_Plugins( PluginContainer target, PluginContainer source )
+        private void mergePluginContainerPlugins( PluginContainer target, PluginContainer source )
         {
             List<Plugin> src = source.getPlugins();
             if ( !src.isEmpty() )
             {
                 List<Plugin> tgt = target.getPlugins();
 
-                Map<Object, Plugin> managedPlugins = new LinkedHashMap<Object, Plugin>( src.size() * 2 );
+                Map<Object, Plugin> managedPlugins = new LinkedHashMap<>( src.size() * 2 );
 
                 Map<Object, Object> context = Collections.emptyMap();
 
@@ -109,7 +117,7 @@ public class DefaultPluginManagementInjector
                 List<PluginExecution> tgt = target.getExecutions();
 
                 Map<Object, PluginExecution> merged =
-                    new LinkedHashMap<Object, PluginExecution>( ( src.size() + tgt.size() ) * 2 );
+                    new LinkedHashMap<>( ( src.size() + tgt.size() ) * 2 );
 
                 for ( PluginExecution element : src )
                 {
@@ -128,7 +136,7 @@ public class DefaultPluginManagementInjector
                     merged.put( key, element );
                 }
 
-                target.setExecutions( new ArrayList<PluginExecution>( merged.values() ) );
+                target.setExecutions( new ArrayList<>( merged.values() ) );
             }
         }
     }

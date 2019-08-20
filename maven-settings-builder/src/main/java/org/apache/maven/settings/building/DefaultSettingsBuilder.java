@@ -27,6 +27,12 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import javax.inject.Inject;
+import javax.inject.Named;
+import javax.inject.Singleton;
+
+import org.apache.maven.building.FileSource;
+import org.apache.maven.building.Source;
 import org.apache.maven.settings.Settings;
 import org.apache.maven.settings.TrackableBase;
 import org.apache.maven.settings.io.SettingsParseException;
@@ -34,8 +40,6 @@ import org.apache.maven.settings.io.SettingsReader;
 import org.apache.maven.settings.io.SettingsWriter;
 import org.apache.maven.settings.merge.MavenSettingsMerger;
 import org.apache.maven.settings.validation.SettingsValidator;
-import org.codehaus.plexus.component.annotations.Component;
-import org.codehaus.plexus.component.annotations.Requirement;
 import org.codehaus.plexus.interpolation.EnvarBasedValueSource;
 import org.codehaus.plexus.interpolation.InterpolationException;
 import org.codehaus.plexus.interpolation.InterpolationPostProcessor;
@@ -44,24 +48,32 @@ import org.codehaus.plexus.interpolation.RegexBasedInterpolator;
 
 /**
  * Builds the effective settings from a user settings file and/or a global settings file.
- * 
+ *
  * @author Benjamin Bentmann
  */
-@Component( role = SettingsBuilder.class )
+@Named
+@Singleton
 public class DefaultSettingsBuilder
     implements SettingsBuilder
 {
 
-    @Requirement
     private SettingsReader settingsReader;
 
-    @Requirement
     private SettingsWriter settingsWriter;
 
-    @Requirement
     private SettingsValidator settingsValidator;
 
-    private MavenSettingsMerger settingsMerger = new MavenSettingsMerger();
+    private final MavenSettingsMerger settingsMerger = new MavenSettingsMerger();
+
+    @Inject
+    public DefaultSettingsBuilder( SettingsReader settingsReader,
+                                   SettingsWriter settingsWriter,
+                                   SettingsValidator settingsValidator )
+    {
+        this.settingsReader = settingsReader;
+        this.settingsWriter = settingsWriter;
+        this.settingsValidator = settingsValidator;
+    }
 
     public DefaultSettingsBuilder setSettingsReader( SettingsReader settingsReader )
     {
@@ -81,16 +93,17 @@ public class DefaultSettingsBuilder
         return this;
     }
 
+    @Override
     public SettingsBuildingResult build( SettingsBuildingRequest request )
         throws SettingsBuildingException
     {
         DefaultSettingsProblemCollector problems = new DefaultSettingsProblemCollector( null );
 
-        SettingsSource globalSettingsSource =
+        Source globalSettingsSource =
             getSettingsSource( request.getGlobalSettingsFile(), request.getGlobalSettingsSource() );
         Settings globalSettings = readSettings( globalSettingsSource, request, problems );
 
-        SettingsSource userSettingsSource =
+        Source userSettingsSource =
             getSettingsSource( request.getUserSettingsFile(), request.getUserSettingsSource() );
         Settings userSettings = readSettings( userSettingsSource, request, problems );
 
@@ -135,7 +148,7 @@ public class DefaultSettingsBuilder
         return false;
     }
 
-    private SettingsSource getSettingsSource( File settingsFile, SettingsSource settingsSource )
+    private Source getSettingsSource( File settingsFile, Source settingsSource )
     {
         if ( settingsSource != null )
         {
@@ -143,12 +156,12 @@ public class DefaultSettingsBuilder
         }
         else if ( settingsFile != null && settingsFile.exists() )
         {
-            return new FileSettingsSource( settingsFile );
+            return new FileSource( settingsFile );
         }
         return null;
     }
 
-    private Settings readSettings( SettingsSource settingsSource, SettingsBuildingRequest request,
+    private Settings readSettings( Source settingsSource, SettingsBuildingRequest request,
                                    DefaultSettingsProblemCollector problems )
     {
         if ( settingsSource == null )
@@ -230,6 +243,7 @@ public class DefaultSettingsBuilder
 
         interpolator.addPostProcessor( new InterpolationPostProcessor()
         {
+            @Override
             public Object execute( String expression, Object value )
             {
                 if ( value != null )

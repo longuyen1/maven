@@ -23,20 +23,24 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import javax.inject.Named;
+import javax.inject.Singleton;
+
 import org.apache.maven.settings.Mirror;
 import org.apache.maven.settings.Profile;
 import org.apache.maven.settings.Repository;
+import org.apache.maven.settings.Proxy;
 import org.apache.maven.settings.Server;
 import org.apache.maven.settings.Settings;
 import org.apache.maven.settings.building.SettingsProblem.Severity;
 import org.apache.maven.settings.building.SettingsProblemCollector;
-import org.codehaus.plexus.component.annotations.Component;
 import org.codehaus.plexus.util.StringUtils;
 
 /**
  * @author Milos Kleint
  */
-@Component( role = SettingsValidator.class )
+@Named
+@Singleton
 public class DefaultSettingsValidator
     implements SettingsValidator
 {
@@ -47,6 +51,7 @@ public class DefaultSettingsValidator
 
     private static final String ILLEGAL_REPO_ID_CHARS = ILLEGAL_FS_CHARS;
 
+    @Override
     public void validate( Settings settings, SettingsProblemCollector problems )
     {
         if ( settings.isUsePluginRegistry() )
@@ -79,7 +84,7 @@ public class DefaultSettingsValidator
 
         if ( servers != null )
         {
-            Set<String> serverIds = new HashSet<String>();
+            Set<String> serverIds = new HashSet<>();
 
             for ( int i = 0; i < servers.size(); i++ )
             {
@@ -123,7 +128,7 @@ public class DefaultSettingsValidator
 
         if ( profiles != null )
         {
-            Set<String> profileIds = new HashSet<String>();
+            Set<String> profileIds = new HashSet<>();
 
             for ( Profile profile : profiles )
             {
@@ -140,11 +145,28 @@ public class DefaultSettingsValidator
                     + "pluginRepositories.pluginRepository" );
             }
         }
+
+        List<Proxy> proxies = settings.getProxies();
+
+        if ( proxies != null )
+        {
+            Set<String> proxyIds = new HashSet<>();
+            
+            for ( Proxy proxy : proxies )
+            {
+                if ( !proxyIds.add( proxy.getId() ) )
+                {
+                    addViolation( problems, Severity.WARNING, "proxies.proxy.id", null,
+                                  "must be unique but found duplicate proxy with id " + proxy.getId() );
+                }
+                validateStringNotEmpty( problems, "proxies.proxy.host", proxy.getHost(), proxy.getId() );
+            }
+        }
     }
 
     private void validateRepositories( SettingsProblemCollector problems, List<Repository> repositories, String prefix )
     {
-        Set<String> repoIds = new HashSet<String>();
+        Set<String> repoIds = new HashSet<>();
 
         for ( Repository repository : repositories )
         {
@@ -188,7 +210,7 @@ public class DefaultSettingsValidator
      * <li><code>string.length > 0</code>
      * </ul>
      */
-    private boolean validateStringNotEmpty( SettingsProblemCollector problems, String fieldName, String string,
+    private static boolean validateStringNotEmpty( SettingsProblemCollector problems, String fieldName, String string,
                                             String sourceHint )
     {
         if ( !validateNotNull( problems, fieldName, string, sourceHint ) )
@@ -213,8 +235,8 @@ public class DefaultSettingsValidator
      * <li><code>string != null</code>
      * </ul>
      */
-    private boolean validateNotNull( SettingsProblemCollector problems, String fieldName, Object object,
-                                     String sourceHint )
+    private static boolean validateNotNull( SettingsProblemCollector problems, String fieldName, Object object,
+                                            String sourceHint )
     {
         if ( object != null )
         {
@@ -226,8 +248,9 @@ public class DefaultSettingsValidator
         return false;
     }
 
-    private boolean validateBannedCharacters( SettingsProblemCollector problems, String fieldName, Severity severity,
-                                              String string, String sourceHint, String banned )
+    private static boolean validateBannedCharacters( SettingsProblemCollector problems, String fieldName,
+                                                     Severity severity, String string, String sourceHint,
+                                                     String banned )
     {
         if ( string != null )
         {
@@ -246,7 +269,7 @@ public class DefaultSettingsValidator
         return true;
     }
 
-    private void addViolation( SettingsProblemCollector problems, Severity severity, String fieldName,
+    private static void addViolation( SettingsProblemCollector problems, Severity severity, String fieldName,
                                String sourceHint, String message )
     {
         StringBuilder buffer = new StringBuilder( 256 );

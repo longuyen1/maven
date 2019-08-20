@@ -19,21 +19,20 @@ package org.apache.maven.project;
  * under the License.
  */
 
-import java.io.File;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.repository.ArtifactRepository;
 import org.apache.maven.artifact.repository.layout.ArtifactRepositoryLayout;
 import org.codehaus.plexus.util.FileUtils;
 
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
+
 public class DefaultMavenProjectBuilderTest
     extends AbstractMavenProjectTestCase
 {
 
-    private List<File> filesToDelete = new ArrayList<File>();
+    private List<File> filesToDelete = new ArrayList<>();
 
     private File localRepoDir;
 
@@ -87,7 +86,7 @@ public class DefaultMavenProjectBuilderTest
     }
 
     /**
-     * Check that we can build ok from the middle pom of a (parent,child,grandchild) heirarchy
+     * Check that we can build ok from the middle pom of a (parent,child,grandchild) hierarchy
      * @throws Exception
      */
     public void testBuildFromMiddlePom() throws Exception
@@ -111,6 +110,66 @@ public class DefaultMavenProjectBuilderTest
         assertEquals( 2, project.getBuildPlugins().get( 0 ).getDependencies().size() );
         assertEquals( 2, project.getBuildPlugins().get( 0 ).getExecutions().size() );
         assertEquals( "first", project.getBuildPlugins().get( 0 ).getExecutions().get( 0 ).getId() );
+    }
+
+    public void testFutureModelVersion()
+        throws Exception
+    {
+        File f1 = getTestFile( "src/test/resources/projects/future-model-version-pom.xml" );
+
+        try
+        {
+            getProject( f1 );
+            fail( "Expected to fail for future versions" );
+        }
+        catch ( ProjectBuildingException e )
+        {
+            assertContains( "Building this project requires a newer version of Maven", e.getMessage() );
+        }
+    }
+
+    public void testPastModelVersion()
+        throws Exception
+    {
+        // a Maven 1.x pom will not even
+        // update the resource if we stop supporting modelVersion 4.0.0
+        File f1 = getTestFile( "src/test/resources/projects/past-model-version-pom.xml" );
+
+        try
+        {
+            getProject( f1 );
+            fail( "Expected to fail for past versions" );
+        }
+        catch ( ProjectBuildingException e )
+        {
+            assertContains( "Building this project requires an older version of Maven", e.getMessage() );
+        }
+    }
+
+    public void testFutureSchemaModelVersion()
+        throws Exception
+    {
+        File f1 = getTestFile( "src/test/resources/projects/future-schema-model-version-pom.xml" );
+
+        try
+        {
+            getProject( f1 );
+            fail( "Expected to fail for future versions" );
+        }
+        catch ( ProjectBuildingException e )
+        {
+            assertContains( "Building this project requires a newer version of Maven", e.getMessage() );
+        }
+    }
+
+    private void assertContains( String expected, String actual )
+    {
+        if ( actual == null || !actual.contains( expected ) )
+        {
+            fail( "Expected: a string containing " + expected + "\nActual: " + ( actual == null
+                ? "null"
+                : "'" + actual + "'" ) );
+        }
     }
 
     public void testBuildStubModelForMissingRemotePom()
@@ -143,7 +202,7 @@ public class DefaultMavenProjectBuilderTest
                                                        null, null );
         return r;
     }
-    
+
     public void xtestLoop()
         throws Exception
     {
@@ -190,4 +249,134 @@ public class DefaultMavenProjectBuilderTest
         request.setResolveDependencies( true );
         projectBuilder.build( pomFile, request );
     }
+
+    /**
+     * Tests whether local version range parent references are build correctly.
+     *
+     * @throws Exception
+     */
+    public void testBuildValidParentVersionRangeLocally() throws Exception
+    {
+        File f1 = getTestFile( "src/test/resources/projects/parent-version-range-local-valid/child/pom.xml" );
+
+        final MavenProject childProject = getProject( f1 );
+
+        assertNotNull( childProject.getParentArtifact() );
+        assertEquals( childProject.getParentArtifact().getVersion(), "1" );
+        assertNotNull( childProject.getParent() );
+        assertEquals( childProject.getParent().getVersion(), "1" );
+        assertNotNull( childProject.getModel().getParent() );
+        assertEquals( childProject.getModel().getParent().getVersion(), "[1,10]" );
+    }
+
+    /**
+     * Tests whether local version range parent references are build correctly.
+     *
+     * @throws Exception
+     */
+    public void testBuildParentVersionRangeLocallyWithoutChildVersion() throws Exception
+    {
+        File f1 =
+            getTestFile( "src/test/resources/projects/parent-version-range-local-child-without-version/child/pom.xml" );
+
+        try
+        {
+            getProject( f1 );
+            fail( "Expected 'ProjectBuildingException' not thrown." );
+        }
+        catch ( final ProjectBuildingException e )
+        {
+            assertNotNull( e.getMessage() );
+            assertTrue( e.getMessage().contains( "Version must be a constant" ) );
+        }
+    }
+
+    /**
+     * Tests whether local version range parent references are build correctly.
+     *
+     * @throws Exception
+     */
+    public void testBuildParentVersionRangeLocallyWithChildVersionExpression() throws Exception
+    {
+        File f1 =
+            getTestFile(
+                "src/test/resources/projects/parent-version-range-local-child-version-expression/child/pom.xml" );
+
+        try
+        {
+            getProject( f1 );
+            fail( "Expected 'ProjectBuildingException' not thrown." );
+        }
+        catch ( final ProjectBuildingException e )
+        {
+            assertNotNull( e.getMessage() );
+            assertTrue( e.getMessage().contains( "Version must be a constant" ) );
+        }
+    }
+
+    /**
+     * Tests whether external version range parent references are build correctly.
+     *
+     * @throws Exception
+     */
+    public void testBuildParentVersionRangeExternally() throws Exception
+    {
+        File f1 = getTestFile( "src/test/resources/projects/parent-version-range-external-valid/pom.xml" );
+
+        final MavenProject childProject = this.getProjectFromRemoteRepository( f1 );
+
+        assertNotNull( childProject.getParentArtifact() );
+        assertEquals( childProject.getParentArtifact().getVersion(), "1" );
+        assertNotNull( childProject.getParent() );
+        assertEquals( childProject.getParent().getVersion(), "1" );
+        assertNotNull( childProject.getModel().getParent() );
+        assertEquals( childProject.getModel().getParent().getVersion(), "[1,1]" );
+    }
+
+    /**
+     * Tests whether external version range parent references are build correctly.
+     *
+     * @throws Exception
+     */
+    public void testBuildParentVersionRangeExternallyWithoutChildVersion() throws Exception
+    {
+        File f1 =
+            getTestFile(
+                "src/test/resources/projects/parent-version-range-external-child-without-version/pom.xml" );
+
+        try
+        {
+            this.getProjectFromRemoteRepository( f1 );
+            fail( "Expected 'ProjectBuildingException' not thrown." );
+        }
+        catch ( final ProjectBuildingException e )
+        {
+            assertNotNull( e.getMessage() );
+            assertTrue( e.getMessage().contains( "Version must be a constant" ) );
+        }
+    }
+
+    /**
+     * Tests whether external version range parent references are build correctly.
+     *
+     * @throws Exception
+     */
+    public void testBuildParentVersionRangeExternallyWithChildVersionExpression() throws Exception
+    {
+        File f1 =
+            getTestFile(
+                "src/test/resources/projects/parent-version-range-external-child-version-expression/pom.xml" );
+
+        try
+        {
+            this.getProjectFromRemoteRepository( f1 );
+            fail( "Expected 'ProjectBuildingException' not thrown." );
+        }
+        catch ( final ProjectBuildingException e )
+        {
+            assertNotNull( e.getMessage() );
+            assertTrue( e.getMessage().contains( "Version must be a constant" ) );
+        }
+    }
+
 }

@@ -21,6 +21,7 @@ package org.apache.maven.project.harness;
 
 import java.io.File;
 import java.util.Iterator;
+import java.util.Objects;
 
 import org.apache.commons.jxpath.JXPathContext;
 import org.apache.commons.jxpath.JXPathNotFoundException;
@@ -43,22 +44,14 @@ public class PomTestWrapper
 
     public PomTestWrapper( File pomFile, MavenProject mavenProject )
     {
-        if ( mavenProject == null )
-        {
-            throw new IllegalArgumentException( "mavenProject: null" );
-        }
-        this.mavenProject = mavenProject;
+        this.mavenProject = Objects.requireNonNull( mavenProject, "mavenProject cannot be null" );
         this.pomFile = pomFile;
         context = JXPathContext.newContext( mavenProject.getModel() );
     }
 
     public PomTestWrapper( MavenProject mavenProject )
     {
-        if ( mavenProject == null )
-        {
-            throw new IllegalArgumentException( "mavenProject: null" );
-        }
-        this.mavenProject = mavenProject;
+        this.mavenProject = Objects.requireNonNull( mavenProject, "mavenProject cannot be null" );
         context = JXPathContext.newContext( mavenProject.getModel() );
     }
 
@@ -81,10 +74,7 @@ public class PomTestWrapper
     public int containerCountForUri( String uri )
         throws IOException
     {
-        if ( uri == null || uri.trim().equals( "" ) )
-        {
-            throw new IllegalArgumentException( "uri: null or empty" );
-        }
+        Validate.notEmpty( uri, "uri can neither be null nor empty " );
         ModelDataSource source = new DefaultModelDataSource();
         source.init( domainModel.getModelProperties(), null );
         return source.queryFor( uri ).size();

@@ -39,6 +39,9 @@ import java.util.Map;
 import java.util.Properties;
 import org.apache.maven.model.building.ModelProblemCollectorRequest;
 
+/**
+ * DefaultProfileManager
+ */
 @Deprecated
 public class DefaultProfileManager
     implements ProfileManager
@@ -50,19 +53,19 @@ public class DefaultProfileManager
     @Requirement
     private ProfileSelector profileSelector;
 
-    private List activatedIds = new ArrayList();
+    private List<String> activatedIds = new ArrayList<>();
 
-    private List deactivatedIds = new ArrayList();
+    private List<String> deactivatedIds = new ArrayList<>();
 
-    private List defaultIds = new ArrayList();
+    private List<String> defaultIds = new ArrayList<>();
 
-    private Map profilesById = new LinkedHashMap();
+    private Map<String, Profile> profilesById = new LinkedHashMap<>();
 
     private Properties requestProperties;
 
     /**
      * @deprecated without passing in the system properties, the SystemPropertiesProfileActivator will not work
-     *             correctly in embedded envirnments.
+     *             correctly in embedded environments.
      */
     public DefaultProfileManager( PlexusContainer container )
     {
@@ -93,7 +96,7 @@ public class DefaultProfileManager
         return requestProperties;
     }
 
-    public Map getProfilesById()
+    public Map<String, Profile> getProfilesById()
     {
         return profilesById;
     }
@@ -105,7 +108,7 @@ public class DefaultProfileManager
     {
         String profileId = profile.getId();
 
-        Profile existing = (Profile) profilesById.get( profileId );
+        Profile existing = profilesById.get( profileId );
         if ( existing != null )
         {
             logger.warn( "Overriding profile: \'" + profileId + "\' (source: " + existing.getSource()
@@ -138,13 +141,11 @@ public class DefaultProfileManager
     /* (non-Javadoc)
     * @see org.apache.maven.profiles.ProfileManager#explicitlyActivate(java.util.List)
     */
-    public void explicitlyActivate( List profileIds )
+    public void explicitlyActivate( List<String> profileIds )
     {
-        for ( Object profileId1 : profileIds )
+        for ( String profileId1 : profileIds )
         {
-            String profileId = (String) profileId1;
-
-            explicitlyActivate( profileId );
+            explicitlyActivate( profileId1 );
         }
     }
 
@@ -164,13 +165,11 @@ public class DefaultProfileManager
     /* (non-Javadoc)
     * @see org.apache.maven.profiles.ProfileManager#explicitlyDeactivate(java.util.List)
     */
-    public void explicitlyDeactivate( List profileIds )
+    public void explicitlyDeactivate( List<String> profileIds )
     {
-        for ( Object profileId1 : profileIds )
+        for ( String profileId1 : profileIds )
         {
-            String profileId = (String) profileId1;
-
-            explicitlyDeactivate( profileId );
+            explicitlyDeactivate( profileId1 );
         }
     }
 
@@ -186,7 +185,7 @@ public class DefaultProfileManager
         context.setSystemProperties( System.getProperties() );
         context.setUserProperties( requestProperties );
 
-        final List<ProfileActivationException> errors = new ArrayList<ProfileActivationException>();
+        final List<ProfileActivationException> errors = new ArrayList<>();
 
         List<Profile> profiles =
             profileSelector.getActiveProfiles( profilesById.values(), context, new ModelProblemCollector()
@@ -212,13 +211,11 @@ public class DefaultProfileManager
     /* (non-Javadoc)
      * @see org.apache.maven.profiles.ProfileManager#addProfiles(java.util.List)
      */
-    public void addProfiles( List profiles )
+    public void addProfiles( List<Profile> profiles )
     {
-        for ( Object profile1 : profiles )
+        for ( Profile profile1 : profiles )
         {
-            Profile profile = (Profile) profile1;
-
-            addProfile( profile );
+            addProfile( profile1 );
         }
     }
 
@@ -230,12 +227,12 @@ public class DefaultProfileManager
         }
     }
 
-    public List getExplicitlyActivatedIds()
+    public List<String> getExplicitlyActivatedIds()
     {
         return activatedIds;
     }
 
-    public List getExplicitlyDeactivatedIds()
+    public List<String>  getExplicitlyDeactivatedIds()
     {
         return deactivatedIds;
     }

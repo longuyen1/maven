@@ -21,6 +21,10 @@ package org.apache.maven.model.profile.activation;
 
 import java.io.File;
 
+import javax.inject.Inject;
+import javax.inject.Named;
+import javax.inject.Singleton;
+
 import org.apache.maven.model.Activation;
 import org.apache.maven.model.ActivationFile;
 import org.apache.maven.model.Profile;
@@ -30,8 +34,6 @@ import org.apache.maven.model.building.ModelProblem.Version;
 import org.apache.maven.model.building.ModelProblemCollectorRequest;
 import org.apache.maven.model.path.PathTranslator;
 import org.apache.maven.model.profile.ProfileActivationContext;
-import org.codehaus.plexus.component.annotations.Component;
-import org.codehaus.plexus.component.annotations.Requirement;
 import org.codehaus.plexus.interpolation.AbstractValueSource;
 import org.codehaus.plexus.interpolation.MapBasedValueSource;
 import org.codehaus.plexus.interpolation.RegexBasedInterpolator;
@@ -40,21 +42,22 @@ import org.codehaus.plexus.util.StringUtils;
 /**
  * Determines profile activation based on the existence/absence of some file.
  * File name interpolation support is limited to <code>${basedir}</code> (since Maven 3,
- * see <a href="http://jira.codehaus.org/browse/MNG-2363">MNG-2363</a>),
+ * see <a href="https://issues.apache.org/jira/browse/MNG-2363">MNG-2363</a>),
  * System properties and request properties.
  * <code>${project.basedir}</code> is intentionally not supported as this form would suggest that other
  * <code>${project.*}</code> expressions can be used, which is however beyond the design.
- * 
+ *
  * @author Benjamin Bentmann
  * @see ActivationFile
- * @see org.apache.maven.model.validation.DefaultModelValidator#validateRawModel(org.apache.maven.model.Model, org.apache.maven.model.building.ModelBuildingRequest, ModelProblemCollector)
+ * @see org.apache.maven.model.validation.DefaultModelValidator#validateRawModel
  */
-@Component( role = ProfileActivator.class, hint = "file" )
+@Named( "file" )
+@Singleton
 public class FileProfileActivator
     implements ProfileActivator
 {
 
-    @Requirement
+    @Inject
     private PathTranslator pathTranslator;
 
     public FileProfileActivator setPathTranslator( PathTranslator pathTranslator )
@@ -63,6 +66,7 @@ public class FileProfileActivator
         return this;
     }
 
+    @Override
     public boolean isActive( Profile profile, ProfileActivationContext context, ModelProblemCollector problems )
     {
         Activation activation = profile.getActivation();
@@ -105,6 +109,7 @@ public class FileProfileActivator
         {
             interpolator.addValueSource( new AbstractValueSource( false )
             {
+                @Override
                 public Object getValue( String expression )
                 {
                     /*
@@ -137,7 +142,8 @@ public class FileProfileActivator
         catch ( Exception e )
         {
             problems.add( new ModelProblemCollectorRequest( Severity.ERROR, Version.BASE )
-                    .setMessage( "Failed to interpolate file location " + path + " for profile " + profile.getId() + ": " + e.getMessage() )
+                    .setMessage( "Failed to interpolate file location " + path + " for profile " + profile.getId()
+                                 + ": " + e.getMessage() )
                     .setLocation( file.getLocation( missing ? "missing" : "exists" ) )
                     .setException( e ) );
             return false;

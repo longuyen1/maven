@@ -30,13 +30,12 @@ import org.codehaus.plexus.configuration.PlexusConfiguration;
 import org.codehaus.plexus.configuration.xml.XmlPlexusConfiguration;
 
 /**
- * The bean containing the Mojo descriptor.
- * <br/>
+ * The bean containing the Mojo descriptor.<br>
  * For more information about the usage tag, have a look to:
- * <a href="http://maven.apache.org/developers/mojo-api-specification.html">
- * http://maven.apache.org/developers/mojo-api-specification.html</a>
+ * <a href="https://maven.apache.org/developers/mojo-api-specification.html">
+ * https://maven.apache.org/developers/mojo-api-specification.html</a>
  *
- * @todo is there a need for the delegation of MavenMojoDescriptor to this?
+ * TODO is there a need for the delegation of MavenMojoDescriptor to this?
  * Why not just extend ComponentDescriptor here?
  */
 public class MojoDescriptor
@@ -223,7 +222,7 @@ public class MojoDescriptor
 
         if ( parameters == null )
         {
-            parameters = new LinkedList<Parameter>();
+            parameters = new LinkedList<>();
         }
 
         parameters.add( parameter );
@@ -236,7 +235,7 @@ public class MojoDescriptor
     {
         if ( parameterMap == null )
         {
-            parameterMap = new HashMap<String, Parameter>();
+            parameterMap = new HashMap<>();
 
             if ( parameters != null )
             {
@@ -269,7 +268,7 @@ public class MojoDescriptor
 
     /**
      * @return the required dependencies in a specified scope
-     * @TODO the name is not intelligible
+     * TODO the name is not intelligible
      */
     @Deprecated
     public String isDependencyResolutionRequired()
@@ -291,7 +290,7 @@ public class MojoDescriptor
      * resolution, this does not include the download of the files for the dependency artifacts. It is meant for mojos
      * that only want to analyze the set of transitive dependencies, in particular during early lifecycle phases where
      * full dependency resolution might fail due to projects which haven't been built yet.
-     * 
+     *
      * @return The scope of (transitive) dependencies that should be collected or {@code null} if none.
      * @since 3.0-alpha-3
      */
@@ -513,7 +512,7 @@ public class MojoDescriptor
     }
 
     /**
-     * @return <code>true</code> if the Mojo is herited, <code>false</code> otherwise.
+     * @return <code>true</code> if the Mojo is inherited, <code>false</code> otherwise.
      */
     public boolean isInheritedByDefault()
     {
@@ -521,7 +520,7 @@ public class MojoDescriptor
     }
 
     /**
-     * @param inheritedByDefault <code>true</code> if the Mojo is herited, <code>false</code> otherwise.
+     * @param inheritedByDefault <code>true</code> if the Mojo is inherited, <code>false</code> otherwise.
      */
     public void setInheritedByDefault( boolean inheritedByDefault )
     {

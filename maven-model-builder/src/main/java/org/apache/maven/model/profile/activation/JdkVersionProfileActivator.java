@@ -23,6 +23,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import javax.inject.Named;
+import javax.inject.Singleton;
+
 import org.apache.maven.model.Activation;
 import org.apache.maven.model.Profile;
 import org.apache.maven.model.building.ModelProblemCollector;
@@ -30,19 +33,20 @@ import org.apache.maven.model.building.ModelProblem.Severity;
 import org.apache.maven.model.building.ModelProblem.Version;
 import org.apache.maven.model.building.ModelProblemCollectorRequest;
 import org.apache.maven.model.profile.ProfileActivationContext;
-import org.codehaus.plexus.component.annotations.Component;
 
 /**
  * Determines profile activation based on the version of the current Java runtime.
- * 
+ *
  * @author Benjamin Bentmann
  * @see Activation#getJdk()
  */
-@Component( role = ProfileActivator.class, hint = "jdk-version" )
+@Named( "jdk-version" )
+@Singleton
 public class JdkVersionProfileActivator
     implements ProfileActivator
 {
 
+    @Override
     public boolean isActive( Profile profile, ProfileActivationContext context, ModelProblemCollector problems )
     {
         Activation activation = profile.getActivation();
@@ -128,8 +132,8 @@ public class JdkVersionProfileActivator
 
         value = value.replaceAll( "[^0-9\\.\\-\\_]", "" );
 
-        List<String> valueTokens = new ArrayList<String>( Arrays.asList( value.split( "[\\.\\-\\_]" ) ) );
-        List<String> rangeValueTokens = new ArrayList<String>( Arrays.asList( rangeValue.value.split( "\\." ) ) );
+        List<String> valueTokens = new ArrayList<>( Arrays.asList( value.split( "[\\.\\-\\_]" ) ) );
+        List<String> rangeValueTokens = new ArrayList<>( Arrays.asList( rangeValue.value.split( "\\." ) ) );
 
         addZeroTokens( valueTokens, 3 );
         addZeroTokens( rangeValueTokens, 3 );
@@ -169,7 +173,7 @@ public class JdkVersionProfileActivator
 
     private static List<RangeValue> getRange( String range )
     {
-        List<RangeValue> ranges = new ArrayList<RangeValue>();
+        List<RangeValue> ranges = new ArrayList<>();
 
         for ( String token : range.split( "," ) )
         {
@@ -213,6 +217,7 @@ public class JdkVersionProfileActivator
             this.closed = closed;
         }
 
+        @Override
         public String toString()
         {
             return value;

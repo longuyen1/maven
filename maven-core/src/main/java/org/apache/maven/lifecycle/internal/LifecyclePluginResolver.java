@@ -19,6 +19,9 @@ package org.apache.maven.lifecycle.internal;
  * under the License.
  */
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.model.Plugin;
 import org.apache.maven.model.PluginManagement;
@@ -30,22 +33,17 @@ import org.apache.maven.project.MavenProject;
 import org.codehaus.plexus.component.annotations.Component;
 import org.codehaus.plexus.component.annotations.Requirement;
 
-import java.util.HashMap;
-import java.util.Map;
-
 /**
+ * <strong>NOTE:</strong> This class is not part of any public api and can be changed or deleted without prior notice.
  * @since 3.0
  * @author Benjamin Bentmann
  * @author Kristian Rosenvold (Extract class)
- *         <p/>
- *         NOTE: This class is not part of any public api and can be changed or deleted without prior notice.
  */
 @Component( role = LifecyclePluginResolver.class )
 public class LifecyclePluginResolver
 {
     @Requirement
     private PluginVersionResolver pluginVersionResolver;
-
 
     public LifecyclePluginResolver( PluginVersionResolver pluginVersionResolver )
     {
@@ -59,15 +57,14 @@ public class LifecyclePluginResolver
     public void resolveMissingPluginVersions( MavenProject project, MavenSession session )
         throws PluginVersionResolutionException
     {
-        Map<String, String> versions = new HashMap<String, String>( 64 );
+        Map<String, String> versions = new HashMap<>( 64 );
 
         for ( Plugin plugin : project.getBuildPlugins() )
         {
             if ( plugin.getVersion() == null )
             {
-                PluginVersionRequest request =
-                    new DefaultPluginVersionRequest( plugin, session.getRepositorySession(),
-                                                     project.getRemotePluginRepositories() );
+                PluginVersionRequest request = new DefaultPluginVersionRequest( plugin, session.getRepositorySession(),
+                                                                                project.getRemotePluginRepositories() );
                 plugin.setVersion( pluginVersionResolver.resolve( request ).getVersion() );
             }
             versions.put( plugin.getKey(), plugin.getVersion() );

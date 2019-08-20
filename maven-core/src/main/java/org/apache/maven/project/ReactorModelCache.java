@@ -19,21 +19,21 @@ package org.apache.maven.project;
  * under the License.
  */
 
-import java.util.HashMap;
-import java.util.Map;
-
 import org.apache.maven.model.building.ModelCache;
+
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * A simple model cache used to accelerate model building during a reactor build.
- * 
+ *
  * @author Benjamin Bentmann
  */
 class ReactorModelCache
     implements ModelCache
 {
 
-    private final Map<CacheKey, Object> models = new HashMap<CacheKey, Object>( 256 );
+    private final Map<CacheKey, Object> models = new ConcurrentHashMap<>( 256 );
 
     public Object get( String groupId, String artifactId, String version, String tag )
     {
@@ -58,7 +58,7 @@ class ReactorModelCache
 
         private final int hashCode;
 
-        public CacheKey( String groupId, String artifactId, String version, String tag )
+        CacheKey( String groupId, String artifactId, String version, String tag )
         {
             this.groupId = ( groupId != null ) ? groupId : "";
             this.artifactId = ( artifactId != null ) ? artifactId : "";

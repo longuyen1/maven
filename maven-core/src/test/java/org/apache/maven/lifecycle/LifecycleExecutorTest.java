@@ -150,7 +150,7 @@ public class LifecycleExecutorTest
 
     List<MojoExecution> getExecutions( MavenExecutionPlan mavenExecutionPlan )
     {
-        List<MojoExecution> result = new ArrayList<MojoExecution>();
+        List<MojoExecution> result = new ArrayList<>();
         for ( ExecutionPlanItem executionPlanItem : mavenExecutionPlan )
         {
             result.add( executionPlanItem.getMojoExecution() );
@@ -213,14 +213,14 @@ public class LifecycleExecutorTest
         //[05] modello:xpp3-writer
         //[06] modello:java
         //[07] modello:xpp3-reader
-        //[08] plugin:descriptor        
+        //[08] plugin:descriptor
         //[09] resources:resources
         //[10] compiler:compile
         //[11] resources:testResources
         //[12] compiler:testCompile
         //[13] surefire:test
         //[14] jar:jar
-        //[15] plugin:addPluginArtifactMetadata        
+        //[15] plugin:addPluginArtifactMetadata
         //[16] install:install
         //
 
@@ -285,7 +285,7 @@ public class LifecycleExecutorTest
         throws Exception
     {
         List<Plugin> plugins =
-            new ArrayList<Plugin>( lifecycleExecutor.getPluginsBoundByDefaultToAllLifecycles( "jar" ) );
+            new ArrayList<>( lifecycleExecutor.getPluginsBoundByDefaultToAllLifecycles( "jar" ) );
 
         assertEquals( 8, plugins.size() );
     }
@@ -400,6 +400,11 @@ public class LifecycleExecutorTest
                 return Collections.emptyList();
             }
 
+            public List<MavenProject> getAllProjects()
+            {
+                return session.getAllProjects();
+            }
+
             public List<MavenProject> getSortedProjects()
             {
                 return Collections.singletonList( session.getCurrentProject() );
@@ -409,9 +414,14 @@ public class LifecycleExecutorTest
             {
                 return Collections.emptyList();
             }
+            
+            public java.util.List<MavenProject> getAllSortedProjects()
+            {
+                return Collections.emptyList();
+            }
         } );
 
-        final List<String> log = new ArrayList<String>();
+        final List<String> log = new ArrayList<>();
 
         MojoExecutionListener mojoListener = new MojoExecutionListener()
         {

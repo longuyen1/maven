@@ -25,13 +25,16 @@ import java.util.List;
 import org.apache.maven.plugin.descriptor.MojoDescriptor;
 import org.apache.maven.plugin.descriptor.PluginDescriptor;
 
+/**
+ * MojoNotFoundException
+ */
 public class MojoNotFoundException
     extends Exception
 {
     private String goal;
 
     private PluginDescriptor pluginDescriptor;
-        
+
     public MojoNotFoundException( String goal, PluginDescriptor pluginDescriptor )
     {
         super( toMessage( goal, pluginDescriptor ) );
@@ -48,13 +51,13 @@ public class MojoNotFoundException
     public PluginDescriptor getPluginDescriptor()
     {
         return pluginDescriptor;
-    }        
+    }
 
     private static String toMessage( String goal, PluginDescriptor pluginDescriptor )
     {
         StringBuilder buffer = new StringBuilder( 256 );
 
-        buffer.append( "Could not find goal '" ).append( goal ).append( "'" );
+        buffer.append( "Could not find goal '" ).append( goal ).append( '\'' );
 
         if ( pluginDescriptor != null )
         {

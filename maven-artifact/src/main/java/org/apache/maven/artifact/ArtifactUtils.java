@@ -26,8 +26,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 
+import org.apache.commons.lang3.Validate;
 import org.apache.maven.artifact.versioning.VersionRange;
 
+/**
+ * ArtifactUtils
+ */
 public final class ArtifactUtils
 {
 
@@ -50,20 +54,22 @@ public final class ArtifactUtils
 
     public static String toSnapshotVersion( String version )
     {
-        if ( version == null )
-        {
-            throw new IllegalArgumentException( "version: null" );
-        }
+        notBlank( version, "version can neither be null, empty nor blank" );
 
-        Matcher m = Artifact.VERSION_FILE_PATTERN.matcher( version );
-        if ( m.matches() )
+        int lastHyphen = version.lastIndexOf( '-' );
+        if ( lastHyphen > 0 )
         {
-            return m.group( 1 ) + "-" + Artifact.SNAPSHOT_VERSION;
+            int prevHyphen = version.lastIndexOf( '-', lastHyphen - 1 );
+            if ( prevHyphen > 0 )
+            {
+                Matcher m = Artifact.VERSION_FILE_PATTERN.matcher( version );
+                if ( m.matches() )
+                {
+                    return m.group( 1 ) + "-" + Artifact.SNAPSHOT_VERSION;
+                }
+            }
         }
-        else
-        {
-            return version;
-        }
+        return version;
     }
 
     public static String versionlessKey( Artifact artifact )
@@ -73,14 +79,9 @@ public final class ArtifactUtils
 
     public static String versionlessKey( String groupId, String artifactId )
     {
-        if ( groupId == null )
-        {
-            throw new NullPointerException( "groupId is null" );
-        }
-        if ( artifactId == null )
-        {
-            throw new NullPointerException( "artifactId is null" );
-        }
+        notBlank( groupId, "groupId can neither be null, empty nor blank" );
+        notBlank( artifactId, "artifactId can neither be null, empty nor blank" );
+
         return groupId + ":" + artifactId;
     }
 
@@ -91,25 +92,25 @@ public final class ArtifactUtils
 
     public static String key( String groupId, String artifactId, String version )
     {
-        if ( groupId == null )
-        {
-            throw new NullPointerException( "groupId is null" );
-        }
-        if ( artifactId == null )
-        {
-            throw new NullPointerException( "artifactId is null" );
-        }
-        if ( version == null )
-        {
-            throw new NullPointerException( "version is null" );
-        }
+        notBlank( groupId, "groupId can neither be null, empty nor blank" );
+        notBlank( artifactId, "artifactId can neither be null, empty nor blank" );
+        notBlank( version, "version can neither be null, empty nor blank" );
 
         return groupId + ":" + artifactId + ":" + version;
     }
 
+    private static void notBlank( String str, String message )
+    {
+        int c = str != null && str.length() > 0 ? str.charAt( 0 ) : 0;
+        if ( ( c < '0' || c > '9' ) && ( c < 'a' || c > 'z' ) )
+        {
+            Validate.notBlank( str, message );
+        }
+    }
+
     public static Map<String, Artifact> artifactMapByVersionlessId( Collection<Artifact> artifacts )
     {
-        Map<String, Artifact> artifactMap = new LinkedHashMap<String, Artifact>();
+        Map<String, Artifact> artifactMap = new LinkedHashMap<>();
 
         if ( artifacts != null )
         {
@@ -151,7 +152,7 @@ public final class ArtifactUtils
             range = VersionRange.createFromVersion( artifact.getVersion() );
         }
 
-        DefaultArtifact clone = new DefaultArtifact( artifact.getGroupId(), artifact.getArtifactId(), range.cloneOf(),
+        DefaultArtifact clone = new DefaultArtifact( artifact.getGroupId(), artifact.getArtifactId(), range,
             artifact.getScope(), artifact.getType(), artifact.getClassifier(),
             artifact.getArtifactHandler(), artifact.isOptional() );
         clone.setRelease( artifact.isRelease() );
@@ -201,7 +202,7 @@ public final class ArtifactUtils
 
         if ( original != null )
         {
-            copy = new ArrayList<T>();
+            copy = new ArrayList<>();
 
             if ( !original.isEmpty() )
             {

@@ -32,6 +32,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 
+import org.apache.maven.RepositoryUtils;
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.factory.ArtifactFactory;
 import org.apache.maven.artifact.metadata.ArtifactMetadataRetrievalException;
@@ -47,7 +48,7 @@ import org.apache.maven.artifact.resolver.ArtifactResolutionException;
 import org.apache.maven.artifact.resolver.MultipleArtifactsNotFoundException;
 import org.apache.maven.artifact.resolver.filter.AndArtifactFilter;
 import org.apache.maven.artifact.resolver.filter.ArtifactFilter;
-import org.apache.maven.artifact.resolver.filter.ExcludesArtifactFilter;
+import org.apache.maven.artifact.resolver.filter.ExclusionArtifactFilter;
 import org.apache.maven.artifact.versioning.ArtifactVersion;
 import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
 import org.apache.maven.artifact.versioning.InvalidVersionSpecificationException;
@@ -55,7 +56,7 @@ import org.apache.maven.artifact.versioning.VersionRange;
 import org.apache.maven.model.Dependency;
 import org.apache.maven.model.DependencyManagement;
 import org.apache.maven.model.DistributionManagement;
-import org.apache.maven.model.Exclusion;
+import org.apache.maven.model.Model;
 import org.apache.maven.model.Relocation;
 import org.apache.maven.model.building.ModelBuildingException;
 import org.apache.maven.model.building.ModelBuildingRequest;
@@ -69,6 +70,7 @@ import org.apache.maven.project.ProjectBuildingException;
 import org.apache.maven.project.ProjectBuildingRequest;
 import org.apache.maven.properties.internal.EnvironmentUtils;
 import org.apache.maven.properties.internal.SystemProperties;
+import org.apache.maven.repository.internal.MavenWorkspaceReader;
 import org.apache.maven.repository.legacy.metadata.DefaultMetadataResolutionRequest;
 import org.apache.maven.repository.legacy.metadata.MetadataResolutionRequest;
 import org.codehaus.plexus.PlexusContainer;
@@ -78,6 +80,7 @@ import org.codehaus.plexus.component.repository.exception.ComponentLookupExcepti
 import org.codehaus.plexus.logging.Logger;
 import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.repository.RepositoryPolicy;
+import org.eclipse.aether.repository.WorkspaceReader;
 import org.eclipse.aether.transfer.ArtifactNotFoundException;
 
 /**
@@ -93,7 +96,7 @@ public class MavenMetadataSource
     @Requirement
     private ArtifactFactory repositorySystem;
 
-    //TODO: This prevents a cycle in the composition which shows us another problem we need to deal with.
+    //TODO This prevents a cycle in the composition which shows us another problem we need to deal with.
     //@Requirement
     private ProjectBuilder projectBuilder;
 
@@ -175,9 +178,21 @@ public class MavenMetadataSource
 
         Artifact relocatedArtifact = null;
 
-        //TODO: Not even sure this is really required as the project will be cached in the builder, we'll see this
-        // is currently the biggest hotspot
-        if ( artifact instanceof ArtifactWithDependencies )
+        final WorkspaceReader workspace = legacySupport.getRepositorySession().getWorkspaceReader();
+        Model model = null;
+        if ( workspace instanceof MavenWorkspaceReader )
+        {
+            model = ( (MavenWorkspaceReader) workspace ).findModel( RepositoryUtils.toArtifact( artifact ) );
+        }
+
+        if ( model != null )
+        {
+            pomArtifact = artifact;
+            dependencies = model.getDependencies();
+            DependencyManagement dependencyManagement = model.getDependencyManagement();
+            managedDependencies = dependencyManagement == null ? null : dependencyManagement.getDependencies();
+        }
+        else if ( artifact instanceof ArtifactWithDependencies )
         {
             pomArtifact = artifact;
 
@@ -200,7 +215,7 @@ public class MavenMetadataSource
 
             if ( rel.project == null )
             {
-                // When this happens we have a Maven 1.x POM, or some invalid POM. 
+                // When this happens we have a Maven 1.x POM, or some invalid POM.
                 // It should have never found its way into Maven 2.x repository but it did.
                 dependencies = Collections.emptyList();
             }
@@ -208,18 +223,18 @@ public class MavenMetadataSource
             {
                 dependencies = rel.project.getDependencies();
 
-                DependencyManagement depMngt = rel.project.getDependencyManagement();
-                managedDependencies = ( depMngt != null ) ? depMngt.getDependencies() : null;
+                DependencyManagement depMgmt = rel.project.getDependencyManagement();
+                managedDependencies = ( depMgmt != null ) ? depMgmt.getDependencies() : null;
 
                 pomRepositories = rel.project.getRemoteArtifactRepositories();
             }
         }
 
-        Set<Artifact> artifacts = Collections.<Artifact>emptySet();
+        Set<Artifact> artifacts = Collections.emptySet();
 
         if ( !artifact.getArtifactHandler().isIncludesDependencies() )
         {
-            artifacts = new LinkedHashSet<Artifact>();
+            artifacts = new LinkedHashSet<>();
 
             for ( Dependency dependency : dependencies )
             {
@@ -236,7 +251,7 @@ public class MavenMetadataSource
 
         if ( managedDependencies != null && request.isResolveManagedVersions() )
         {
-            managedVersions = new HashMap<String, Artifact>();
+            managedVersions = new HashMap<>();
 
             for ( Dependency managedDependency : managedDependencies )
             {
@@ -270,7 +285,7 @@ public class MavenMetadataSource
 
         if ( pomRepositories != null && !pomRepositories.isEmpty() )
         {
-            Map<String, ArtifactRepository> repos = new LinkedHashMap<String, ArtifactRepository>();
+            Map<String, ArtifactRepository> repos = new LinkedHashMap<>();
 
             for ( ArtifactRepository repo : requestRepositories )
             {
@@ -288,7 +303,7 @@ public class MavenMetadataSource
                 }
             }
 
-            repositories = new ArrayList<ArtifactRepository>( repos.values() );
+            repositories = new ArrayList<>( repos.values() );
         }
 
         return repositories;
@@ -394,14 +409,7 @@ public class MavenMetadataSource
 
         if ( !dependency.getExclusions().isEmpty() )
         {
-            List<String> exclusions = new ArrayList<String>();
-
-            for ( Exclusion e : dependency.getExclusions() )
-            {
-                exclusions.add( e.getGroupId() + ':' + e.getArtifactId() );
-            }
-
-            effectiveFilter = new ExcludesArtifactFilter( exclusions );
+            effectiveFilter = new ExclusionArtifactFilter( dependency.getExclusions() );
 
             if ( inheritedFilter != null )
             {
@@ -445,7 +453,7 @@ public class MavenMetadataSource
 
     public List<ArtifactVersion> retrieveAvailableVersionsFromDeploymentRepository( Artifact artifact,
                                                                                     ArtifactRepository localRepository,
-                                                                                    ArtifactRepository deploymentRepository )
+                                                                              ArtifactRepository deploymentRepository )
         throws ArtifactMetadataRetrievalException
     {
         RepositoryMetadata metadata = new ArtifactRepositoryMetadata( artifact );
@@ -467,7 +475,7 @@ public class MavenMetadataSource
     private List<ArtifactVersion> retrieveAvailableVersionsFromMetadata( Metadata repoMetadata,
                                                                          List<String> availableVersions )
     {
-        Collection<String> versions = new LinkedHashSet<String>();
+        Collection<String> versions = new LinkedHashSet<>();
 
         if ( ( repoMetadata != null ) && ( repoMetadata.getVersioning() != null ) )
         {
@@ -476,7 +484,7 @@ public class MavenMetadataSource
 
         versions.addAll( availableVersions );
 
-        List<ArtifactVersion> artifactVersions = new ArrayList<ArtifactVersion>( versions.size() );
+        List<ArtifactVersion> artifactVersions = new ArrayList<>( versions.size() );
 
         for ( String version : versions )
         {
@@ -493,7 +501,7 @@ public class MavenMetadataSource
                                                  MavenProject project )
         throws InvalidDependencyVersionException
     {
-        Set<Artifact> artifacts = new LinkedHashSet<Artifact>();
+        Set<Artifact> artifacts = new LinkedHashSet<>();
 
         for ( Dependency d : dependencies )
         {
@@ -534,7 +542,7 @@ public class MavenMetadataSource
 
         return projectBuilder;
     }
-
+    @SuppressWarnings( "checkstyle:methodlength" )
     private ProjectRelocation retrieveRelocatedProject( Artifact artifact, MetadataResolutionRequest repositoryRequest )
         throws ArtifactMetadataRetrievalException
     {
@@ -658,7 +666,7 @@ public class MavenMetadataSource
 
                         // MNG-2861: the artifact data has changed. If the available versions where previously
                         // retrieved, we need to update it.
-                        // TODO: shouldn't the versions be merged across relocations?
+                        // TODO shouldn't the versions be merged across relocations?
                         List<ArtifactVersion> available = artifact.getAvailableVersions();
                         if ( available != null && !available.isEmpty() )
                         {

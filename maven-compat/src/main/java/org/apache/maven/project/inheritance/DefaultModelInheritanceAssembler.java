@@ -20,8 +20,6 @@ package org.apache.maven.project.inheritance;
  */
 
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -49,11 +47,14 @@ import org.codehaus.plexus.component.annotations.Component;
 import org.codehaus.plexus.util.StringUtils;
 import org.codehaus.plexus.util.xml.Xpp3Dom;
 
+/**
+ * DefaultModelInheritanceAssembler
+ */
 @Component( role = ModelInheritanceAssembler.class )
 public class DefaultModelInheritanceAssembler
     implements ModelInheritanceAssembler
 {
-    // TODO: Remove this!
+    // TODO Remove this!
     @SuppressWarnings( "unchecked" )
     public void assembleBuildInheritance( Build childBuild, Build parentBuild, boolean handleAsInheritance )
     {
@@ -232,7 +233,7 @@ public class DefaultModelInheritanceAssembler
             }
         }
 
-        assembleDistributionInheritence( child, parent, childPathAdjustment, appendPaths );
+        assembleDistributionInheritance( child, parent, childPathAdjustment, appendPaths );
 
         // issueManagement
         if ( child.getIssueManagement() == null )
@@ -305,7 +306,7 @@ public class DefaultModelInheritanceAssembler
         child.setProperties( props );
     }
 
-    // TODO: Remove this!
+    // TODO Remove this!
     @SuppressWarnings( "unchecked" )
     private void assembleDependencyManagementInheritance( Model child, Model parent )
     {
@@ -323,7 +324,7 @@ public class DefaultModelInheritanceAssembler
             {
                 List<Dependency> childDeps = childDepMgmt.getDependencies();
 
-                Map<String, Dependency> mappedChildDeps = new TreeMap<String, Dependency>();
+                Map<String, Dependency> mappedChildDeps = new TreeMap<>();
                 for ( Dependency dep : childDeps )
                 {
                     mappedChildDeps.put( dep.getManagementKey(), dep );
@@ -377,7 +378,7 @@ public class DefaultModelInheritanceAssembler
 
         if ( ( parentPlugins != null ) && !parentPlugins.isEmpty() )
         {
-            Map<String, ReportPlugin> assembledPlugins = new TreeMap<String, ReportPlugin>();
+            Map<String, ReportPlugin> assembledPlugins = new TreeMap<>();
 
             Map<String, ReportPlugin> childPlugins = child.getReportPluginsAsMap();
 
@@ -416,7 +417,7 @@ public class DefaultModelInheritanceAssembler
                 }
             }
 
-            child.setPlugins( new ArrayList<ReportPlugin>( assembledPlugins.values() ) );
+            child.setPlugins( new ArrayList<>( assembledPlugins.values() ) );
 
             child.flushReportPluginMap();
         }
@@ -427,7 +428,7 @@ public class DefaultModelInheritanceAssembler
         List<String> parentReports = parent.getReports();
         List<String> childReports = child.getReports();
 
-        List<String> reports = new ArrayList<String>();
+        List<String> reports = new ArrayList<>();
 
         if ( ( childReports != null ) && !childReports.isEmpty() )
         {
@@ -479,7 +480,7 @@ public class DefaultModelInheritanceAssembler
 
         if ( ( parentReportSets != null ) && !parentReportSets.isEmpty() )
         {
-            Map<String, ReportSet> assembledReportSets = new TreeMap<String, ReportSet>();
+            Map<String, ReportSet> assembledReportSets = new TreeMap<>();
 
             Map<String, ReportSet> childReportSets = child.getReportSetsAsMap();
 
@@ -518,18 +519,18 @@ public class DefaultModelInheritanceAssembler
                 }
             }
 
-            child.setReportSets( new ArrayList<ReportSet>( assembledReportSets.values() ) );
+            child.setReportSets( new ArrayList<>( assembledReportSets.values() ) );
 
             child.flushReportSetMap();
         }
 
     }
 
-    // TODO: Remove this!
+    // TODO Remove this!
     @SuppressWarnings( "unchecked" )
     private void assembleDependencyInheritance( Model child, Model parent )
     {
-        Map<String, Dependency> depsMap = new LinkedHashMap<String, Dependency>();
+        Map<String, Dependency> depsMap = new LinkedHashMap<>();
 
         List<Dependency> deps = parent.getDependencies();
 
@@ -551,7 +552,7 @@ public class DefaultModelInheritanceAssembler
             }
         }
 
-        child.setDependencies( new ArrayList<Dependency>( depsMap.values() ) );
+        child.setDependencies( new ArrayList<>( depsMap.values() ) );
     }
 
     private void assembleBuildInheritance( Model child, Model parent )
@@ -571,7 +572,7 @@ public class DefaultModelInheritanceAssembler
         }
     }
 
-    private void assembleDistributionInheritence( Model child, Model parent, String childPathAdjustment,
+    private void assembleDistributionInheritance( Model child, Model parent, String childPathAdjustment,
                                                   boolean appendPaths )
     {
         if ( parent.getDistributionManagement() != null )
@@ -655,7 +656,7 @@ public class DefaultModelInheritanceAssembler
         return repository;
     }
 
-    // TODO: This should eventually be migrated to DefaultPathTranslator.
+    // TODO This should eventually be migrated to DefaultPathTranslator.
     protected String appendPath( String parentPath, String childPath, String pathAdjustment, boolean appendPaths )
     {
         String uncleanPath = parentPath;
@@ -691,10 +692,10 @@ public class DefaultModelInheritanceAssembler
         return cleanedPath + resolvePath( uncleanPath );
     }
 
-    // TODO: Move this to plexus-utils' PathTool.
+    // TODO Move this to plexus-utils' PathTool.
     private static String resolvePath( String uncleanPath )
     {
-        LinkedList<String> pathElements = new LinkedList<String>();
+        LinkedList<String> pathElements = new LinkedList<>();
 
         StringTokenizer tokenizer = new StringTokenizer( uncleanPath, "/" );
 
@@ -702,26 +703,26 @@ public class DefaultModelInheritanceAssembler
         {
             String token = tokenizer.nextToken();
 
-            if ( token.equals( "" ) )
+            switch ( token )
             {
-                // Empty path entry ("...//.."), remove.
-            }
-            else if ( token.equals( ".." ) )
-            {
-                if ( pathElements.isEmpty() )
-                {
-                    // FIXME: somehow report to the user
-                    // that there are too many '..' elements.
-                    // For now, ignore the extra '..'.
-                }
-                else
-                {
-                    pathElements.removeLast();
-                }
-            }
-            else
-            {
-                pathElements.addLast( token );
+                case "":
+                    // Empty path entry ("...//.."), remove.
+                    break;
+                case "..":
+                    if ( pathElements.isEmpty() )
+                    {
+                        // FIXME: somehow report to the user
+                        // that there are too many '..' elements.
+                        // For now, ignore the extra '..'.
+                    }
+                    else
+                    {
+                        pathElements.removeLast();
+                    }
+                    break;
+                default:
+                    pathElements.addLast( token );
+                    break;
             }
         }
 

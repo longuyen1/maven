@@ -36,14 +36,15 @@ import java.util.Set;
 import java.util.TreeSet;
 
 /**
+ * <p>
  * Logs debug output from the various lifecycle phases.
- * 
+ * </p>
+ * <strong>NOTE:</strong> This class is not part of any public api and can be changed or deleted without prior notice.
+ *
  * @since 3.0
  * @author Benjamin Bentmann
  * @author Jason van Zyl
  * @author Kristian Rosenvold (extracted class only)
- *         <p/>
- *         NOTE: This class is not part of any public api and can be changed or deleted without prior notice.
  */
 @Component( role = LifecycleDebugLogger.class )
 public class LifecycleDebugLogger
@@ -155,8 +156,8 @@ public class LifecycleDebugLogger
 
     private void debugDependencyRequirements( List<MojoExecution> mojoExecutions )
     {
-        Set<String> scopesToCollect = new TreeSet<String>();
-        Set<String> scopesToResolve = new TreeSet<String>();
+        Set<String> scopesToCollect = new TreeSet<>();
+        Set<String> scopesToResolve = new TreeSet<>();
 
         for ( MojoExecution mojoExecution : mojoExecutions )
         {

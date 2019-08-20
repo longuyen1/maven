@@ -20,34 +20,25 @@ package org.apache.maven.execution.scope.internal;
  */
 
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.LinkedList;
 import java.util.Map;
 
-import javax.inject.Named;
-import javax.inject.Singleton;
-
 import org.apache.maven.execution.MojoExecutionEvent;
 import org.apache.maven.execution.MojoExecutionListener;
-import org.apache.maven.execution.scope.MojoExecutionScoped;
 import org.apache.maven.execution.scope.WeakMojoExecutionListener;
-import org.apache.maven.plugin.MojoExecution;
 import org.apache.maven.plugin.MojoExecutionException;
-import org.apache.maven.project.MavenProject;
-import org.codehaus.plexus.PlexusContainer;
-import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
 
-import com.google.common.collect.Maps;
-import com.google.inject.AbstractModule;
 import com.google.inject.Key;
-import com.google.inject.Module;
 import com.google.inject.OutOfScopeException;
 import com.google.inject.Provider;
 import com.google.inject.Scope;
 import com.google.inject.util.Providers;
 
-@Named
-@Singleton
+/**
+ * MojoExecutionScope
+ */
 public class MojoExecutionScope
     implements Scope, MojoExecutionListener
 {
@@ -61,12 +52,12 @@ public class MojoExecutionScope
 
     private static final class ScopeState
     {
-        public final Map<Key<?>, Provider<?>> seeded = Maps.newHashMap();
+        private final Map<Key<?>, Provider<?>> seeded = new HashMap<>();
 
-        public final Map<Key<?>, Object> provided = Maps.newHashMap();
+        private final Map<Key<?>, Object> provided = new HashMap<>();
     }
 
-    private final ThreadLocal<LinkedList<ScopeState>> values = new ThreadLocal<LinkedList<ScopeState>>();
+    private final ThreadLocal<LinkedList<ScopeState>> values = new ThreadLocal<>();
 
     public MojoExecutionScope()
     {
@@ -77,7 +68,7 @@ public class MojoExecutionScope
         LinkedList<ScopeState> stack = values.get();
         if ( stack == null )
         {
-            stack = new LinkedList<ScopeState>();
+            stack = new LinkedList<>();
             values.set( stack );
         }
         stack.addFirst( new ScopeState() );
@@ -158,24 +149,6 @@ public class MojoExecutionScope
         return (Provider<T>) SEEDED_KEY_PROVIDER;
     }
 
-    public static Module getScopeModule( PlexusContainer container )
-        throws ComponentLookupException
-    {
-        final MojoExecutionScope scope = container.lookup( MojoExecutionScope.class );
-        return new AbstractModule()
-        {
-            @Override
-            protected void configure()
-            {
-                bindScope( MojoExecutionScoped.class, scope );
-
-                // standard scope bindings
-                bind( MavenProject.class ).toProvider( MojoExecutionScope.<MavenProject> seededKeyProvider() ).in( scope );
-                bind( MojoExecution.class ).toProvider( MojoExecutionScope.<MojoExecution> seededKeyProvider() ).in( scope );
-            }
-        };
-    }
-
     public void beforeMojoExecution( MojoExecutionEvent event )
         throws MojoExecutionException
     {
@@ -207,7 +180,7 @@ public class MojoExecutionScope
         // the same instance can be provided multiple times under different Key's
         // deduplicate instances to avoid redundant beforeXXX/afterXXX callbacks
         IdentityHashMap<WeakMojoExecutionListener, Object> listeners =
-            new IdentityHashMap<WeakMojoExecutionListener, Object>();
+            new IdentityHashMap<>();
         for ( Object provided : getScopeState().provided.values() )
         {
             if ( provided instanceof WeakMojoExecutionListener )

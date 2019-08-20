@@ -28,7 +28,7 @@ import org.apache.maven.model.Repository;
 
 /**
  * A stub implementation to bypass artifact resolution from repositories.
- * 
+ *
  * @author Benjamin Bentmann
  */
 public class EmptyProjectBuildingHelper
@@ -45,11 +45,11 @@ public class EmptyProjectBuildingHelper
         }
         else
         {
-            return new ArrayList<ArtifactRepository>();
+            return new ArrayList<>();
         }
     }
 
-    public ProjectRealmCache.CacheRecord createProjectRealm( MavenProject proejct,
+    public ProjectRealmCache.CacheRecord createProjectRealm( MavenProject project,
                                                              Model model, ProjectBuildingRequest request )
     {
         return new ProjectRealmCache.CacheRecord( null, null );

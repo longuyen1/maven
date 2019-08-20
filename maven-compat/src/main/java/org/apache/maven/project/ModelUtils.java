@@ -40,15 +40,16 @@ public final class ModelUtils
 
     /**
      * This should be the resulting ordering of plugins after merging:
-     * <p/>
+     * <p>
      * Given:
-     * <p/>
-     * parent: X -> A -> B -> D -> E
-     * child: Y -> A -> C -> D -> F
-     * <p/>
+     * <pre>
+     * parent: X -&gt; A -&gt; B -&gt; D -&gt; E
+     * child: Y -&gt; A -&gt; C -&gt; D -&gt; F
+     * </pre>
      * Result:
-     * <p/>
-     * X -> Y -> A -> B -> C -> D -> E -> F
+     * <pre>
+     * X -&gt; Y -&gt; A -&gt; B -&gt; C -&gt; D -&gt; E -&gt; F
+     * </pre>
      */
     public static void mergePluginLists( PluginContainer childContainer, PluginContainer parentContainer,
                                          boolean handleAsInheritance )
@@ -63,7 +64,7 @@ public final class ModelUtils
 
         if ( ( parentPlugins != null ) && !parentPlugins.isEmpty() )
         {
-            parentPlugins = new ArrayList<Plugin>( parentPlugins );
+            parentPlugins = new ArrayList<>( parentPlugins );
 
             // If we're processing this merge as an inheritance, we have to build up a list of
             // plugins that were considered for inheritance.
@@ -82,7 +83,7 @@ public final class ModelUtils
                 }
             }
 
-            List<Plugin> assembledPlugins = new ArrayList<Plugin>();
+            List<Plugin> assembledPlugins = new ArrayList<>();
 
             Map<String, Plugin> childPlugins = childContainer.getPluginsAsMap();
 
@@ -134,16 +135,16 @@ public final class ModelUtils
     public static List<Plugin> orderAfterMerge( List<Plugin> merged, List<Plugin> highPrioritySource,
                                                 List<Plugin> lowPrioritySource )
     {
-        List<Plugin> results = new ArrayList<Plugin>();
+        List<Plugin> results = new ArrayList<>();
 
         if ( !merged.isEmpty() )
         {
             results.addAll( merged );
         }
 
-        List<Plugin> missingFromResults = new ArrayList<Plugin>();
+        List<Plugin> missingFromResults = new ArrayList<>();
 
-        List<List<Plugin>> sources = new ArrayList<List<Plugin>>();
+        List<List<Plugin>> sources = new ArrayList<>();
 
         sources.add( highPrioritySource );
         sources.add( lowPrioritySource );
@@ -222,9 +223,9 @@ public final class ModelUtils
 
         if ( ( parentExecutions != null ) && !parentExecutions.isEmpty() )
         {
-            List<PluginExecution> mergedExecutions = new ArrayList<PluginExecution>();
+            List<PluginExecution> mergedExecutions = new ArrayList<>();
 
-            Map<String, PluginExecution> assembledExecutions = new TreeMap<String, PluginExecution>();
+            Map<String, PluginExecution> assembledExecutions = new TreeMap<>();
 
             Map<String, PluginExecution> childExecutions = child.getExecutionsAsMap();
 
@@ -282,7 +283,7 @@ public final class ModelUtils
         List<String> parentGoals = parent.getGoals();
         List<String> childGoals = child.getGoals();
 
-        List<String> goals = new ArrayList<String>();
+        List<String> goals = new ArrayList<>();
 
         if ( ( childGoals != null ) && !childGoals.isEmpty() )
         {
@@ -312,12 +313,8 @@ public final class ModelUtils
 
     public static List<Repository> mergeRepositoryLists( List<Repository> dominant, List<Repository> recessive )
     {
-        List<Repository> repositories = new ArrayList<Repository>();
 
-        for ( Repository repository : dominant )
-        {
-            repositories.add( repository );
-        }
+        List<Repository> repositories = new ArrayList<>( dominant );
 
         for ( Repository repository : recessive )
         {
@@ -343,7 +340,7 @@ public final class ModelUtils
 
     private static List<Dependency> mergeDependencyList( List<Dependency> child, List<Dependency> parent )
     {
-        Map<String, Dependency> depsMap = new LinkedHashMap<String, Dependency>();
+        Map<String, Dependency> depsMap = new LinkedHashMap<>();
 
         if ( parent != null )
         {
@@ -361,7 +358,7 @@ public final class ModelUtils
             }
         }
 
-        return new ArrayList<Dependency>( depsMap.values() );
+        return new ArrayList<>( depsMap.values() );
     }
 
 }

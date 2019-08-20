@@ -24,43 +24,47 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import javax.inject.Named;
+import javax.inject.Singleton;
+
 import org.apache.maven.model.Dependency;
 import org.apache.maven.model.DependencyManagement;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.building.ModelBuildingRequest;
 import org.apache.maven.model.building.ModelProblemCollector;
-import org.codehaus.plexus.component.annotations.Component;
 
 /**
  * Handles the import of dependency management from other models into the target model.
- * 
+ *
  * @author Benjamin Bentmann
  */
-@Component( role = DependencyManagementImporter.class )
+@Named
+@Singleton
 public class DefaultDependencyManagementImporter
     implements DependencyManagementImporter
 {
 
+    @Override
     public void importManagement( Model target, List<? extends DependencyManagement> sources,
                                   ModelBuildingRequest request, ModelProblemCollector problems )
     {
         if ( sources != null && !sources.isEmpty() )
         {
-            Map<String, Dependency> dependencies = new LinkedHashMap<String, Dependency>();
+            Map<String, Dependency> dependencies = new LinkedHashMap<>();
 
-            DependencyManagement depMngt = target.getDependencyManagement();
+            DependencyManagement depMgmt = target.getDependencyManagement();
 
-            if ( depMngt != null )
+            if ( depMgmt != null )
             {
-                for ( Dependency dependency : depMngt.getDependencies() )
+                for ( Dependency dependency : depMgmt.getDependencies() )
                 {
                     dependencies.put( dependency.getManagementKey(), dependency );
                 }
             }
             else
             {
-                depMngt = new DependencyManagement();
-                target.setDependencyManagement( depMngt );
+                depMgmt = new DependencyManagement();
+                target.setDependencyManagement( depMgmt );
             }
 
             for ( DependencyManagement source : sources )
@@ -75,7 +79,7 @@ public class DefaultDependencyManagementImporter
                 }
             }
 
-            depMngt.setDependencies( new ArrayList<Dependency>( dependencies.values() ) );
+            depMgmt.setDependencies( new ArrayList<>( dependencies.values() ) );
         }
     }
 

@@ -34,30 +34,40 @@ import org.codehaus.plexus.util.introspection.ReflectionValueExtractor;
 
 /**
  * Evaluator for plugin parameters expressions. Content surrounded by <code>${</code> and <code>}</code> is evaluated.
- * Recognized values are:<table border="1">
+ * Recognized values are:
+ * <table border="1">
+ * <caption>Expression matrix</caption>
  * <tr><th>expression</th>                     <th></th>               <th>evaluation result</th></tr>
  * <tr><td><code>session</code></td>           <td></td>               <td>the actual {@link MavenSession}</td></tr>
  * <tr><td><code>session.*</code></td>         <td>(since Maven 3)</td><td></td></tr>
- * <tr><td><code>localRepository</code></td>   <td></td>               <td>{@link MavenSession#getLocalRepository()}</td></tr>
+ * <tr><td><code>localRepository</code></td>   <td></td>
+ *                                             <td>{@link MavenSession#getLocalRepository()}</td></tr>
  * <tr><td><code>reactorProjects</code></td>   <td></td>               <td>{@link MavenSession#getProjects()}</td></tr>
- * <tr><td><code>repositorySystemSession</code></td><td> (since Maven 3)</td><td>{@link MavenSession#getRepositorySession()}</td></tr>
- * <tr><td><code>project</code></td>           <td></td>               <td>{@link MavenSession#getCurrentProject()}</td></tr>
+ * <tr><td><code>repositorySystemSession</code></td><td> (since Maven 3)</td>
+ *                                             <td>{@link MavenSession#getRepositorySession()}</td></tr>
+ * <tr><td><code>project</code></td>           <td></td>
+ *                                             <td>{@link MavenSession#getCurrentProject()}</td></tr>
  * <tr><td><code>project.*</code></td>         <td></td>               <td></td></tr>
  * <tr><td><code>pom.*</code></td>             <td>(since Maven 3)</td><td>same as <code>project.*</code></td></tr>
- * <tr><td><code>executedProject</code></td>   <td></td>               <td>{@link MavenProject#getExecutionProject()}</td></tr>
+ * <tr><td><code>executedProject</code></td>   <td></td>
+ *                                             <td>{@link MavenProject#getExecutionProject()}</td></tr>
  * <tr><td><code>settings</code></td>          <td></td>               <td>{@link MavenSession#getSettings()}</td></tr>
  * <tr><td><code>settings.*</code></td>        <td></td>               <td></td></tr>
- * <tr><td><code>basedir</code></td>           <td></td>               <td>{@link MavenSession#getExecutionRootDirectory()} or <code>System.getProperty( "user.dir" )</code> if null</td></tr>
+ * <tr><td><code>basedir</code></td>           <td></td>
+ *                                             <td>{@link MavenSession#getExecutionRootDirectory()} or 
+ *                                                 <code>System.getProperty( "user.dir" )</code> if null</td></tr>
  * <tr><td><code>mojoExecution</code></td>     <td></td>               <td>the actual {@link MojoExecution}</td></tr>
  * <tr><td><code>mojo</code></td>              <td>(since Maven 3)</td><td>same as <code>mojoExecution</code></td></tr>
  * <tr><td><code>mojo.*</code></td>            <td>(since Maven 3)</td><td></td></tr>
- * <tr><td><code>plugin</code></td>            <td>(since Maven 3)</td><td>{@link MojoExecution#getMojoDescriptor()}.{@link MojoDescriptor#getPluginDescriptor() getPluginDescriptor()}</td></tr>
+ * <tr><td><code>plugin</code></td>            <td>(since Maven 3)</td>
+ *                             <td>{@link MojoExecution#getMojoDescriptor()}.{@link MojoDescriptor#getPluginDescriptor()
+ *                                 getPluginDescriptor()}</td></tr>
  * <tr><td><code>plugin.*</code></td>          <td></td>               <td></td></tr>
  * <tr><td><code>*</code></td>                 <td></td>               <td>system properties</td></tr>
  * <tr><td><code>*</code></td>                 <td></td>               <td>project properties</td></tr>
  * </table>
  * <i>Notice:</i> <code>reports</code> was supported in Maven 2.x but was removed in Maven 3
- * 
+ *
  * @author Jason van Zyl
  * @see MavenSession
  * @see MojoExecution
@@ -75,7 +85,7 @@ public class PluginParameterExpressionEvaluator
 
     private Properties properties;
 
-    @Deprecated //TODO: used by the Enforcer plugin
+    @Deprecated //TODO used by the Enforcer plugin
     public PluginParameterExpressionEvaluator( MavenSession session, MojoExecution mojoExecution,
                                                PathTranslator pathTranslator, Logger logger, MavenProject project,
                                                Properties properties )
@@ -92,9 +102,16 @@ public class PluginParameterExpressionEvaluator
     {
         this.session = session;
         this.mojoExecution = mojoExecution;
-        this.properties = session.getExecutionProperties();
+        this.properties = new Properties();
         this.project = session.getCurrentProject();
 
+        //
+        // Maven4: We may want to evaluate how this is used but we add these separate as the 
+        // getExecutionProperties is deprecated in MavenSession.
+        //
+        this.properties.putAll( session.getUserProperties() );
+        this.properties.putAll( session.getSystemProperties() );
+        
         String basedir = null;
 
         if ( project != null )
@@ -121,12 +138,15 @@ public class PluginParameterExpressionEvaluator
         this.basedir = basedir;
     }
 
+    @Override
     public Object evaluate( String expr )
         throws ExpressionEvaluationException
     {
         return evaluate( expr, null );
     }
 
+    @Override
+    @SuppressWarnings( "checkstyle:methodlength" )
     public Object evaluate( String expr, Class<?> type )
         throws ExpressionEvaluationException
     {
@@ -143,7 +163,7 @@ public class PluginParameterExpressionEvaluator
             int index = expr.indexOf( "${" );
             if ( index >= 0 )
             {
-                int lastIndex = expr.indexOf( "}", index );
+                int lastIndex = expr.indexOf( '}', index );
                 if ( lastIndex >= 0 )
                 {
                     String retVal = expr.substring( 0, index );
@@ -196,7 +216,7 @@ public class PluginParameterExpressionEvaluator
         {
             try
             {
-                int pathSeparator = expression.indexOf( "/" );
+                int pathSeparator = expression.indexOf( '/' );
 
                 if ( pathSeparator > 0 )
                 {
@@ -211,7 +231,7 @@ public class PluginParameterExpressionEvaluator
             }
             catch ( Exception e )
             {
-                // TODO: don't catch exception
+                // TODO don't catch exception
                 throw new ExpressionEvaluationException( "Error evaluating plugin parameter expression: " + expression,
                                                          e );
             }
@@ -236,7 +256,7 @@ public class PluginParameterExpressionEvaluator
         {
             try
             {
-                int pathSeparator = expression.indexOf( "/" );
+                int pathSeparator = expression.indexOf( '/' );
 
                 if ( pathSeparator > 0 )
                 {
@@ -251,7 +271,7 @@ public class PluginParameterExpressionEvaluator
             }
             catch ( Exception e )
             {
-                // TODO: don't catch exception
+                // TODO don't catch exception
                 throw new ExpressionEvaluationException( "Error evaluating plugin parameter expression: " + expression,
                                                          e );
             }
@@ -268,7 +288,7 @@ public class PluginParameterExpressionEvaluator
         {
             try
             {
-                int pathSeparator = expression.indexOf( "/" );
+                int pathSeparator = expression.indexOf( '/' );
 
                 if ( pathSeparator > 0 )
                 {
@@ -283,7 +303,7 @@ public class PluginParameterExpressionEvaluator
             }
             catch ( Exception e )
             {
-                // TODO: don't catch exception
+                // TODO don't catch exception
                 throw new ExpressionEvaluationException( "Error evaluating plugin parameter expression: " + expression,
                                                          e );
             }
@@ -296,7 +316,7 @@ public class PluginParameterExpressionEvaluator
         {
             try
             {
-                int pathSeparator = expression.indexOf( "/" );
+                int pathSeparator = expression.indexOf( '/' );
 
                 PluginDescriptor pluginDescriptor = mojoDescriptor.getPluginDescriptor();
 
@@ -325,7 +345,7 @@ public class PluginParameterExpressionEvaluator
         {
             try
             {
-                int pathSeparator = expression.indexOf( "/" );
+                int pathSeparator = expression.indexOf( '/' );
 
                 if ( pathSeparator > 0 )
                 {
@@ -340,7 +360,7 @@ public class PluginParameterExpressionEvaluator
             }
             catch ( Exception e )
             {
-                // TODO: don't catch exception
+                // TODO don't catch exception
                 throw new ExpressionEvaluationException( "Error evaluating plugin parameter expression: " + expression,
                                                          e );
             }
@@ -351,7 +371,7 @@ public class PluginParameterExpressionEvaluator
         }
         else if ( expression.startsWith( "basedir" ) )
         {
-            int pathSeparator = expression.indexOf( "/" );
+            int pathSeparator = expression.indexOf( '/' );
 
             if ( pathSeparator > 0 )
             {
@@ -395,7 +415,7 @@ public class PluginParameterExpressionEvaluator
 
         if ( value instanceof String )
         {
-            // TODO: without #, this could just be an evaluate call...
+            // TODO without #, this could just be an evaluate call...
 
             String val = (String) value;
 
@@ -430,16 +450,17 @@ public class PluginParameterExpressionEvaluator
 
     private String stripTokens( String expr )
     {
-        if ( expr.startsWith( "${" ) && ( expr.indexOf( "}" ) == expr.length() - 1 ) )
+        if ( expr.startsWith( "${" ) && ( expr.indexOf( '}' ) == expr.length() - 1 ) )
         {
             expr = expr.substring( 2, expr.length() - 1 );
         }
         return expr;
     }
 
+    @Override
     public File alignToBaseDirectory( File file )
     {
-        // TODO: Copied from the DefaultInterpolator. We likely want to resurrect the PathTranslator or at least a
+        // TODO Copied from the DefaultInterpolator. We likely want to resurrect the PathTranslator or at least a
         // similar component for re-usage
         if ( file != null )
         {

@@ -25,7 +25,7 @@ import org.apache.maven.model.composition.DependencyManagementImporter;
 import org.apache.maven.model.inheritance.DefaultInheritanceAssembler;
 import org.apache.maven.model.inheritance.InheritanceAssembler;
 import org.apache.maven.model.interpolation.ModelInterpolator;
-import org.apache.maven.model.interpolation.StringSearchModelInterpolator;
+import org.apache.maven.model.interpolation.StringVisitorModelInterpolator;
 import org.apache.maven.model.io.DefaultModelReader;
 import org.apache.maven.model.io.ModelReader;
 import org.apache.maven.model.locator.DefaultModelLocator;
@@ -70,7 +70,7 @@ import org.apache.maven.model.validation.ModelValidator;
  * only meant as a utility for developers that want to employ the model builder outside of the Maven build system, Maven
  * plugins should always acquire model builder instances via dependency injection. Developers might want to subclass
  * this factory to provide custom implementations for some of the components used by the model builder.
- * 
+ *
  * @author Benjamin Bentmann
  */
 public class DefaultModelBuilderFactory
@@ -124,9 +124,9 @@ public class DefaultModelBuilderFactory
 
     protected ModelInterpolator newModelInterpolator()
     {
-        UrlNormalizer urlNormalizer = newUrlNormalizer();
+        UrlNormalizer normalizer = newUrlNormalizer();
         PathTranslator pathTranslator = newPathTranslator();
-        return new StringSearchModelInterpolator().setPathTranslator( pathTranslator ).setUrlNormalizer( urlNormalizer );
+        return new StringVisitorModelInterpolator().setPathTranslator( pathTranslator ).setUrlNormalizer( normalizer );
     }
 
     protected ModelValidator newModelValidator()
@@ -201,7 +201,7 @@ public class DefaultModelBuilderFactory
 
     /**
      * Creates a new model builder instance.
-     * 
+     *
      * @return The new model builder instance, never {@code null}.
      */
     public DefaultModelBuilder newInstance()
@@ -233,6 +233,7 @@ public class DefaultModelBuilderFactory
         implements LifecycleBindingsInjector
     {
 
+        @Override
         public void injectLifecycleBindings( Model model, ModelBuildingRequest request, ModelProblemCollector problems )
         {
         }

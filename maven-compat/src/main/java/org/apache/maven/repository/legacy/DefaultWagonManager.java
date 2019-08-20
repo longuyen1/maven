@@ -56,17 +56,30 @@ import org.codehaus.plexus.util.FileUtils;
 import org.eclipse.aether.ConfigurationProperties;
 import org.eclipse.aether.util.ConfigUtils;
 
-//TODO: remove the update check manager
-//TODO: separate into retriever and publisher
-//TODO: remove hardcoding of checksum logic
+//TODO remove the update check manager
+//TODO separate into retriever and publisher
+//TODO remove hardcoding of checksum logic
+
+/**
+ * Manages <a href="https://maven.apache.org/wagon">Wagon</a> related operations in Maven.
+ */
 @Component( role = WagonManager.class )
 public class DefaultWagonManager
     implements WagonManager
 {
-    private static final String[] CHECKSUM_IDS = { "md5", "sha1" };
 
-    /** have to match the CHECKSUM_IDS */
-    private static final String[] CHECKSUM_ALGORITHMS = { "MD5", "SHA-1" };
+    private static final String[] CHECKSUM_IDS =
+    {
+        "md5", "sha1"
+    };
+
+    /**
+     * have to match the CHECKSUM_IDS
+     */
+    private static final String[] CHECKSUM_ALGORITHMS =
+    {
+        "MD5", "SHA-1"
+    };
 
     @Requirement
     private Logger logger;
@@ -79,11 +92,11 @@ public class DefaultWagonManager
 
     @Requirement
     private LegacySupport legacySupport;
-    
-    
+
     //
     // Retriever
     //
+    @Override
     public void getArtifact( Artifact artifact, ArtifactRepository repository, TransferListener downloadMonitor,
                              boolean force )
         throws TransferFailedException, ResourceDoesNotExistException
@@ -95,14 +108,15 @@ public class DefaultWagonManager
         if ( !policy.isEnabled() )
         {
             logger.debug( "Skipping disabled repository " + repository.getId() + " for resolution of "
-                + artifact.getId() );
+                              + artifact.getId() );
+
         }
         else if ( artifact.isSnapshot() || !artifact.getFile().exists() )
         {
             if ( force || updateCheckManager.isUpdateRequired( artifact, repository ) )
             {
                 logger.debug( "Trying repository " + repository.getId() + " for resolution of " + artifact.getId()
-                    + " from " + remotePath );
+                                  + " from " + remotePath );
 
                 try
                 {
@@ -132,22 +146,27 @@ public class DefaultWagonManager
                 String error = updateCheckManager.getError( artifact, repository );
                 if ( error != null )
                 {
-                    throw new TransferFailedException( "Failure to resolve " + remotePath + " from "
-                        + repository.getUrl() + " was cached in the local repository. "
-                        + "Resolution will not be reattempted until the update interval of " + repository.getId()
-                        + " has elapsed or updates are forced. Original error: " + error );
+                    throw new TransferFailedException(
+                        "Failure to resolve " + remotePath + " from " + repository.getUrl()
+                            + " was cached in the local repository. "
+                            + "Resolution will not be reattempted until the update interval of "
+                            + repository.getId() + " has elapsed or updates are forced. Original error: " + error );
+
                 }
                 else
                 {
-                    throw new ResourceDoesNotExistException( "Failure to resolve " + remotePath + " from "
-                        + repository.getUrl() + " was cached in the local repository. "
-                        + "Resolution will not be reattempted until the update interval of " + repository.getId()
-                        + " has elapsed or updates are forced." );
+                    throw new ResourceDoesNotExistException(
+                        "Failure to resolve " + remotePath + " from " + repository.getUrl()
+                            + " was cached in the local repository. "
+                            + "Resolution will not be reattempted until the update interval of "
+                            + repository.getId() + " has elapsed or updates are forced." );
+
                 }
             }
         }
     }
 
+    @Override
     public void getArtifact( Artifact artifact, List<ArtifactRepository> remoteRepositories,
                              TransferListener downloadMonitor, boolean force )
         throws TransferFailedException, ResourceDoesNotExistException
@@ -172,7 +191,8 @@ public class DefaultWagonManager
                 // because we want to cycle through them all before squawking.
 
                 logger.debug( "Unable to find artifact " + artifact.getId() + " in repository " + repository.getId()
-                    + " (" + repository.getUrl() + ")", e );
+                                  + " (" + repository.getUrl() + ")", e );
+
             }
             catch ( TransferFailedException e )
             {
@@ -181,6 +201,7 @@ public class DefaultWagonManager
                 String msg =
                     "Unable to get artifact " + artifact.getId() + " from repository " + repository.getId() + " ("
                         + repository.getUrl() + "): " + e.getMessage();
+
                 if ( logger.isDebugEnabled() )
                 {
                     logger.warn( msg, e );
@@ -206,6 +227,7 @@ public class DefaultWagonManager
         }
     }
 
+    @Override
     public void getArtifactMetadata( ArtifactMetadata metadata, ArtifactRepository repository, File destination,
                                      String checksumPolicy )
         throws TransferFailedException, ResourceDoesNotExistException
@@ -215,6 +237,7 @@ public class DefaultWagonManager
         getRemoteFile( repository, destination, remotePath, null, checksumPolicy, true );
     }
 
+    @Override
     public void getArtifactMetadataFromDeploymentRepository( ArtifactMetadata metadata, ArtifactRepository repository,
                                                              File destination, String checksumPolicy )
         throws TransferFailedException, ResourceDoesNotExistException
@@ -229,50 +252,60 @@ public class DefaultWagonManager
      *
      * @param wagon
      * @param repository
+     *
      * @throws ConnectionException
      * @throws AuthenticationException
      */
     private void connectWagon( Wagon wagon, ArtifactRepository repository )
         throws ConnectionException, AuthenticationException
     {
-        // MNG-5509 
+        // MNG-5509
         // See org.eclipse.aether.connector.wagon.WagonRepositoryConnector.connectWagon(Wagon)
-        if( legacySupport.getRepositorySession() != null )
+        if ( legacySupport.getRepositorySession() != null )
         {
-            Properties headers = new Properties();
-            
-            headers.put( "User-Agent", ConfigUtils.getString( legacySupport.getRepositorySession(), "Maven",
-                                                              ConfigurationProperties.USER_AGENT ) );
-            try
+            String userAgent = ConfigUtils.getString( legacySupport.getRepositorySession(), null,
+                                                      ConfigurationProperties.USER_AGENT );
+
+            if ( userAgent == null )
             {
-                Method setHttpHeaders = wagon.getClass().getMethod( "setHttpHeaders", Properties.class );
-                setHttpHeaders.invoke( wagon, headers );
-            }
-            catch ( NoSuchMethodException e )
-            {
-                // normal for non-http wagons
-            }
-            catch ( Exception e )
-            {
-                logger.debug( "Could not set user agent for wagon " + wagon.getClass().getName() + ": " + e );
+                Properties headers = new Properties();
+
+                headers.put( "User-Agent", ConfigUtils.getString( legacySupport.getRepositorySession(), "Maven",
+                                                                  ConfigurationProperties.USER_AGENT ) );
+                try
+                {
+                    Method setHttpHeaders = wagon.getClass().getMethod( "setHttpHeaders", Properties.class );
+                    setHttpHeaders.invoke( wagon, headers );
+                }
+                catch ( NoSuchMethodException e )
+                {
+                    // normal for non-http wagons
+                }
+                catch ( Exception e )
+                {
+                    logger.debug( "Could not set user agent for wagon " + wagon.getClass().getName() + ": " + e );
+                }
             }
         }
-        
+
         if ( repository.getProxy() != null && logger.isDebugEnabled() )
         {
             logger.debug( "Using proxy " + repository.getProxy().getHost() + ":" + repository.getProxy().getPort()
-                + " for " + repository.getUrl() );
+                              + " for " + repository.getUrl() );
+
         }
 
         if ( repository.getAuthentication() != null && repository.getProxy() != null )
         {
             wagon.connect( new Repository( repository.getId(), repository.getUrl() ), authenticationInfo( repository ),
                            proxyInfo( repository ) );
+
         }
         else if ( repository.getAuthentication() != null )
         {
             wagon.connect( new Repository( repository.getId(), repository.getUrl() ),
                            authenticationInfo( repository ) );
+
         }
         else if ( repository.getProxy() != null )
         {
@@ -304,6 +337,8 @@ public class DefaultWagonManager
         return proxyInfo;
     }
 
+    @SuppressWarnings( "checkstyle:methodlength" )
+    @Override
     public void getRemoteFile( ArtifactRepository repository, File destination, String remotePath,
                                TransferListener downloadMonitor, String checksumPolicy, boolean force )
         throws TransferFailedException, ResourceDoesNotExistException
@@ -348,7 +383,7 @@ public class DefaultWagonManager
                 ChecksumObserver sha1ChecksumObserver = null;
                 try
                 {
-                    // TODO: configure on repository
+                    // TODO configure on repository
                     int i = 0;
 
                     md5ChecksumObserver = addChecksumObserver( wagon, CHECKSUM_ALGORITHMS[i++] );
@@ -405,10 +440,10 @@ public class DefaultWagonManager
                     }
                     catch ( ChecksumFailedException e )
                     {
-                        // if we catch a ChecksumFailedException, it means the transfer/read succeeded, but the checksum
-                        // doesn't match. This could be a problem with the server (ibiblio HTTP-200 error page), so we'll
-                        // try this up to two times. On the second try, we'll handle it as a bona-fide error, based on the
-                        // repository's checksum checking policy.
+                        // if we catch a ChecksumFailedException, it means the transfer/read succeeded, but the 
+                        // checksum doesn't match. This could be a problem with the server (ibiblio HTTP-200 error
+                        // page), so we'll try this up to two times. On the second try, we'll handle it as a bona-fide
+                        // error, based on the repository's checksum checking policy.
                         if ( firstRun )
                         {
                             logger.warn( "*** CHECKSUM FAILED - " + e.getMessage() + " - RETRYING" );
@@ -498,7 +533,6 @@ public class DefaultWagonManager
             // File.renameTo operation doesn't really work across file systems.
             // So we will attempt to do a File.renameTo for efficiency and atomicity, if this fails
             // then we will use a brute force copy and delete the temporary file.
-
             if ( !temp.renameTo( destination ) )
             {
                 try
@@ -513,7 +547,8 @@ public class DefaultWagonManager
                 catch ( IOException e )
                 {
                     throw new TransferFailedException( "Error copying temporary file to the final destination: "
-                        + e.getMessage(), e );
+                                                           + e.getMessage(), e );
+
                 }
             }
         }
@@ -522,6 +557,7 @@ public class DefaultWagonManager
     //
     // Publisher
     //
+    @Override
     public void putArtifact( File source, Artifact artifact, ArtifactRepository deploymentRepository,
                              TransferListener downloadMonitor )
         throws TransferFailedException
@@ -529,6 +565,7 @@ public class DefaultWagonManager
         putRemoteFile( deploymentRepository, source, deploymentRepository.pathOf( artifact ), downloadMonitor );
     }
 
+    @Override
     public void putArtifactMetadata( File source, ArtifactMetadata artifactMetadata, ArtifactRepository repository )
         throws TransferFailedException
     {
@@ -536,6 +573,7 @@ public class DefaultWagonManager
         putRemoteFile( repository, source, repository.pathOfRemoteRepositoryMetadata( artifactMetadata ), null );
     }
 
+    @Override
     public void putRemoteFile( ArtifactRepository repository, File source, String remotePath,
                                TransferListener downloadMonitor )
         throws TransferFailedException
@@ -557,17 +595,17 @@ public class DefaultWagonManager
             wagon.addTransferListener( downloadMonitor );
         }
 
-        Map<String, ChecksumObserver> checksums = new HashMap<String, ChecksumObserver>( 2 );
+        Map<String, ChecksumObserver> checksums = new HashMap<>( 2 );
 
-        Map<String, String> sums = new HashMap<String, String>( 2 );
+        Map<String, String> sums = new HashMap<>( 2 );
 
-        // TODO: configure these on the repository
+        // TODO configure these on the repository
         for ( int i = 0; i < CHECKSUM_IDS.length; i++ )
         {
             checksums.put( CHECKSUM_IDS[i], addChecksumObserver( wagon, CHECKSUM_ALGORITHMS[i] ) );
         }
 
-        List<File> temporaryFiles = new ArrayList<File>();
+        List<File> temporaryFiles = new ArrayList<>();
 
         try
         {
@@ -595,7 +633,7 @@ public class DefaultWagonManager
             // We do this in here so we can checksum the artifact metadata too, otherwise it could be metadata itself
             for ( String extension : checksums.keySet() )
             {
-                // TODO: shouldn't need a file intermediatary - improve wagon to take a stream
+                // TODO shouldn't need a file intermediatary - improve wagon to take a stream
                 File temp = File.createTempFile( "maven-artifact", null );
                 temp.deleteOnExit();
                 FileUtils.fileWrite( temp.getAbsolutePath(), "UTF-8", sums.get( extension ) );
@@ -630,9 +668,9 @@ public class DefaultWagonManager
             cleanupTemporaryFiles( temporaryFiles );
 
             // Remove every checksum listener
-            for ( String aCHECKSUM_IDS : CHECKSUM_IDS )
+            for ( String id : CHECKSUM_IDS )
             {
-                TransferListener checksumListener = checksums.get( aCHECKSUM_IDS );
+                TransferListener checksumListener = checksums.get( id );
                 if ( checksumListener != null )
                 {
                     wagon.removeTransferListener( checksumListener );
@@ -709,7 +747,7 @@ public class DefaultWagonManager
 
             // check for 'ALGO (name) = CHECKSUM' like used by openssl
             if ( expectedChecksum.regionMatches( true, 0, "MD", 0, 2 )
-                || expectedChecksum.regionMatches( true, 0, "SHA", 0, 3 ) )
+                     || expectedChecksum.regionMatches( true, 0, "SHA", 0, 3 ) )
             {
                 int lastSpacePos = expectedChecksum.lastIndexOf( ' ' );
                 expectedChecksum = expectedChecksum.substring( lastSpacePos + 1 );
@@ -740,7 +778,8 @@ public class DefaultWagonManager
             else
             {
                 throw new ChecksumFailedException( "Checksum failed on download: local = '" + actualChecksum
-                    + "'; remote = '" + expectedChecksum + "'" );
+                                                       + "'; remote = '" + expectedChecksum + "'" );
+
             }
         }
         catch ( IOException e )
@@ -774,6 +813,7 @@ public class DefaultWagonManager
         }
     }
 
+    @Override
     @Deprecated
     public Wagon getWagon( Repository repository )
         throws UnsupportedProtocolException
@@ -781,6 +821,7 @@ public class DefaultWagonManager
         return getWagon( repository.getProtocol() );
     }
 
+    @Override
     @Deprecated
     public Wagon getWagon( String protocol )
         throws UnsupportedProtocolException
@@ -800,9 +841,10 @@ public class DefaultWagonManager
         catch ( ComponentLookupException e )
         {
             throw new UnsupportedProtocolException( "Cannot find wagon which supports the requested protocol: "
-                + protocol, e );
+                                                        + protocol, e );
+
         }
-        
+
         return wagon;
     }
 

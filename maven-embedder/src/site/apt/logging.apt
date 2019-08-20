@@ -31,13 +31,13 @@ Maven Logging
 * Logging API
 
  Maven uses
- {{{http://plexus.codehaus.org/plexus-containers/plexus-container-default/apidocs/org/codehaus/plexus/logging/package-summary.html}Plexus
- Container logging API}}, like any other Plexus components, ie 
- {{{http://plexus.codehaus.org/plexus-containers/plexus-container-default/apidocs/org/codehaus/plexus/logging/LoggerManager.html}LoggerManager}}
- / {{{http://plexus.codehaus.org/plexus-containers/plexus-container-default/apidocs/org/codehaus/plexus/logging/Logger.html}Logger}}.
+ {{{https://codehaus-plexus.github.io/plexus-containers/plexus-container-default/apidocs/org/codehaus/plexus/logging/package-summary.html}Plexus
+ Container logging API}}, like any other Plexus components, ie
+ {{{https://codehaus-plexus.github.io/plexus-containers/plexus-container-default/apidocs/org/codehaus/plexus/logging/LoggerManager.html}LoggerManager}}
+ / {{{https://codehaus-plexus.github.io/plexus-containers/plexus-container-default/apidocs/org/codehaus/plexus/logging/Logger.html}Logger}}.
 
  Starting with Maven 3.1.0:
- 
+
   *  Maven supports SLF4J API logging API too, ie {{{http://slf4j.org/apidocs/org/slf4j/LoggerFactory.html}LoggerFactory}} /
      {{{http://slf4j.org/apidocs/org/slf4j/Logger.html}Logger}},
 
@@ -54,7 +54,7 @@ Maven Logging
 
  Logging configuration loading is actually done by logging implementation, without any Maven extensions to support merging
  Maven installation configuration with per-user configuration for example:
- `${maven.home}/conf/logging` directory was added to core's classpath (see `${maven.home}/bin/m2.conf`). See your implementation
+ <<<$\{maven.conf}/logging>>> directory was added to core's classpath (see <<<$\{maven.home}/bin/m2.conf>>>). See your implementation
  documentation for details on file names, formats, and so on.
 
  During Maven initialization, Maven tweaks default root logging level to match CLI verbosity choice. Since such feature isn't available
@@ -64,29 +64,9 @@ Maven Logging
 
 * Getting Logger Instance
 
- Plexus Logger and LoggerManager can be injected in Plexus component using Plexus annotations
+ Starting with Maven 3.1.0, SLF4J Logger can be used directly. This technique can be used safely in Maven core
+ components or in plugins/component not requiring compatibility with previous Maven versions.
 
-+------+
-import org.codehaus.plexus.logging.Logger;
-import org.codehaus.plexus.component.annotations.Component;
-import org.codehaus.plexus.component.annotations.Requirement;
-
-@Component( role = MyComponent.class )
-public class DefaultMyComponent
-    implements MyComponent
-{
-    @Requirement
-    private Logger logger;
-
-    @Requirement
-    private LoggerManager loggerManager;
-}
-+------+
-
- Starting with Maven 3.1.0, SLF4J Logger can be used directly too, without Plexus. Of course, this will only work when run under
- Maven 3.1.0, then this technique can be used safely only in Maven core components or in plugins/component not requiring
- compatibility with previous Maven versions.
- 
 +-----+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

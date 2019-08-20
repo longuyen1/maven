@@ -1,5 +1,7 @@
 package org.apache.maven.model.profile.activation;
 
+import java.util.Objects;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -25,34 +27,25 @@ import org.apache.maven.model.Profile;
 import org.apache.maven.model.building.SimpleProblemCollector;
 import org.apache.maven.model.profile.DefaultProfileActivationContext;
 import org.apache.maven.model.profile.ProfileActivationContext;
-import org.codehaus.plexus.PlexusTestCase;
-import org.codehaus.plexus.component.annotations.Component;
+
+import junit.framework.TestCase;
 
 /**
  * Provides common services to test {@link ProfileActivator} implementations.
- * 
+ *
  * @author Benjamin Bentmann
  */
 public abstract class AbstractProfileActivatorTest<T extends ProfileActivator>
-    extends PlexusTestCase
+    extends TestCase
 {
 
     private Class<T> activatorClass;
-
-    private String roleHint;
 
     protected T activator;
 
     public AbstractProfileActivatorTest( Class<T> activatorClass )
     {
-        if ( activatorClass == null )
-        {
-            throw new IllegalArgumentException( "class of profile activator to test is not specified" );
-        }
-
-        this.activatorClass = activatorClass;
-
-        roleHint = activatorClass.getAnnotation( Component.class ).hint();
+        this.activatorClass = Objects.requireNonNull( activatorClass, "activatorClass cannot be null" );;
     }
 
     @Override
@@ -61,7 +54,7 @@ public abstract class AbstractProfileActivatorTest<T extends ProfileActivator>
     {
         super.setUp();
 
-        activator = activatorClass.cast( lookup( ProfileActivator.class, roleHint ) );
+        activator = activatorClass.getConstructor().newInstance();
     }
 
     @Override

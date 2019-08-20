@@ -19,8 +19,11 @@ package org.apache.maven.lifecycle.mapping;
  * under the License.
  */
 
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+
 
 /**
  * Class Lifecycle.
@@ -35,7 +38,7 @@ public class Lifecycle
     /**
      * Field phases
      */
-    private Map<String, String> phases;
+    private Map<String, LifecyclePhase> lifecyclePhases;
 
     /*
      * NOTE: This exists merely for backward-compat with legacy-style lifecycle definitions and allows configuration
@@ -53,11 +56,11 @@ public class Lifecycle
     }
 
     /**
-     * Method getPhases
+     * Method getLifecyclePhases
      */
-    public Map<String, String> getPhases()
+    public Map<String, LifecyclePhase> getLifecyclePhases()
     {
-        return this.phases;
+        return this.lifecyclePhases;
     }
 
     /**
@@ -71,13 +74,45 @@ public class Lifecycle
     }
 
     /**
-     * Method setPhases
+     * Method setLifecyclePhases
      *
-     * @param phases
+     * @param lifecyclePhases
      */
+    public void setLifecyclePhases( Map<String, LifecyclePhase> lifecyclePhases )
+    {
+        this.lifecyclePhases = lifecyclePhases;
+    }
+
+    @Deprecated
+    public Map<String, String> getPhases()
+    {
+        Map<String, LifecyclePhase> lphases = getLifecyclePhases();
+        if ( lphases == null )
+        {
+            return null;
+        }
+
+        if ( lphases.isEmpty() )
+        {
+            return Collections.emptyMap();
+        }
+
+        Map<String, String> phases = new LinkedHashMap<>();
+        for ( Map.Entry<String, LifecyclePhase> e: lphases.entrySet() )
+        {
+            phases.put( e.getKey(), e.getValue().toString() );
+        }
+        return phases;
+    }
+
+    @Deprecated
     public void setPhases( Map<String, String> phases )
     {
-        this.phases = phases;
-    } //-- void setPhases(java.util.List)
-
+        Map<String, LifecyclePhase> lphases = new LinkedHashMap<>();
+        for ( Map.Entry<String, String> e: phases.entrySet() )
+        {
+            lphases.put( e.getKey(), new LifecyclePhase( e.getValue() ) );
+        }
+        setLifecyclePhases( lphases );
+    }
 }

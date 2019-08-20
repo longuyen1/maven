@@ -25,7 +25,7 @@ import org.apache.maven.model.Model;
  * Describes a problem that was encountered during model building. A problem can either be an exception that was thrown
  * or a simple string message. In addition, a problem carries a hint about its source, e.g. the POM file that exhibits
  * the problem.
- * 
+ *
  * @author Benjamin Bentmann
  */
 public class DefaultModelProblem
@@ -51,7 +51,7 @@ public class DefaultModelProblem
 
     /**
      * Creates a new problem with the specified message and exception.
-     * 
+     *
      * @param message The message describing the problem, may be {@code null}.
      * @param severity The severity level of the problem, may be {@code null} to default to
      *            {@link ModelProblem.Severity#ERROR}.
@@ -61,8 +61,8 @@ public class DefaultModelProblem
      * @param exception The exception that caused this problem, may be {@code null}.
      */
     //mkleint: does this need to be public?
-    public DefaultModelProblem( String message, Severity severity, Version version, Model source, int lineNumber, int columnNumber,
-                                Exception exception )
+    public DefaultModelProblem( String message, Severity severity, Version version, Model source, int lineNumber,
+                                int columnNumber, Exception exception )
     {
         this( message, severity, version, ModelProblemUtils.toPath( source ), lineNumber, columnNumber,
               ModelProblemUtils.toId( source ), exception );
@@ -70,7 +70,7 @@ public class DefaultModelProblem
 
     /**
      * Creates a new problem with the specified message and exception.
-     * 
+     *
      * @param message The message describing the problem, may be {@code null}.
      * @param severity The severity level of the problem, may be {@code null} to default to
      *            {@link ModelProblem.Severity#ERROR}.
@@ -82,8 +82,9 @@ public class DefaultModelProblem
      * @param exception The exception that caused this problem, may be {@code null}.
      */
     //mkleint: does this need to be public?
-    public DefaultModelProblem( String message, Severity severity, Version version, String source, int lineNumber, int columnNumber,
-                                String modelId, Exception exception )
+    @SuppressWarnings( "checkstyle:parameternumber" )
+    public DefaultModelProblem( String message, Severity severity, Version version, String source, int lineNumber,
+                                int columnNumber, String modelId, Exception exception )
     {
         this.message = message;
         this.severity = ( severity != null ) ? severity : Severity.ERROR;
@@ -95,31 +96,37 @@ public class DefaultModelProblem
         this.version = version;
     }
 
+    @Override
     public String getSource()
     {
         return source;
     }
 
+    @Override
     public int getLineNumber()
     {
         return lineNumber;
     }
 
+    @Override
     public int getColumnNumber()
     {
         return columnNumber;
     }
 
+    @Override
     public String getModelId()
     {
         return modelId;
     }
 
+    @Override
     public Exception getException()
     {
         return exception;
     }
 
+    @Override
     public String getMessage()
     {
         String msg;
@@ -141,23 +148,25 @@ public class DefaultModelProblem
         return msg;
     }
 
+    @Override
     public Severity getSeverity()
     {
         return severity;
     }
 
+    @Override
     public Version getVersion()
     {
         return version;
     }
-    
+
 
     @Override
     public String toString()
     {
         StringBuilder buffer = new StringBuilder( 128 );
 
-        buffer.append( "[" ).append( getSeverity() ).append( "] " );
+        buffer.append( '[' ).append( getSeverity() ).append( "] " );
         buffer.append( getMessage() );
         buffer.append( " @ " ).append( ModelProblemUtils.formatLocation( this, null ) );
 

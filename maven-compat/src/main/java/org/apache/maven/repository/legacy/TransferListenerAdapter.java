@@ -30,6 +30,9 @@ import org.apache.maven.wagon.events.TransferListener;
 import org.apache.maven.wagon.repository.Repository;
 import org.apache.maven.wagon.resource.Resource;
 
+/**
+ * TransferListenerAdapter
+ */
 public class TransferListenerAdapter
     implements TransferListener
 {
@@ -55,8 +58,8 @@ public class TransferListenerAdapter
     private TransferListenerAdapter( ArtifactTransferListener listener )
     {
         this.listener = listener;
-        this.artifacts = new IdentityHashMap<Resource, ArtifactTransferResource>();
-        this.transfers = new IdentityHashMap<Resource, Long>();
+        this.artifacts = new IdentityHashMap<>();
+        this.transfers = new IdentityHashMap<>();
     }
 
     public void debug( String message )

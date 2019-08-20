@@ -61,9 +61,18 @@ public class DelegatingLocalArtifactRepository
         this.ideWorkspace = localRepository;
     }
 
+    /**
+     * @deprecated instead use {@link #getIdeWorkspace()}
+     */
+    @Deprecated
     public LocalArtifactRepository getIdeWorspace()
     {
         return ideWorkspace;
+    }
+
+    public LocalArtifactRepository getIdeWorkspace()
+    {
+        return getIdeWorspace();
     }
 
     @Override
@@ -90,7 +99,7 @@ public class DelegatingLocalArtifactRepository
     @Override
     public List<String> findVersions( Artifact artifact )
     {
-        Collection<String> versions = new LinkedHashSet<String>();
+        Collection<String> versions = new LinkedHashSet<>();
 
         if ( buildReactor != null )
         {
@@ -104,7 +113,7 @@ public class DelegatingLocalArtifactRepository
 
         versions.addAll( userLocalArtifactRepository.findVersions( artifact ) );
 
-        return Collections.unmodifiableList( new ArrayList<String>( versions ) );
+        return Collections.unmodifiableList( new ArrayList<>( versions ) );
     }
 
     public String pathOfLocalRepositoryMetadata( ArtifactMetadata metadata, ArtifactRepository repository )
@@ -185,7 +194,7 @@ public class DelegatingLocalArtifactRepository
         {
             return false;
         }
-        
+
         DelegatingLocalArtifactRepository other = (DelegatingLocalArtifactRepository) obj;
 
         return eq( buildReactor, other.buildReactor )

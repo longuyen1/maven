@@ -19,25 +19,29 @@ package org.apache.maven.model.plugin;
  * under the License.
  */
 
+import javax.inject.Named;
+import javax.inject.Singleton;
+
 import org.apache.maven.model.Model;
 import org.apache.maven.model.ReportPlugin;
 import org.apache.maven.model.ReportSet;
 import org.apache.maven.model.Reporting;
 import org.apache.maven.model.building.ModelBuildingRequest;
 import org.apache.maven.model.building.ModelProblemCollector;
-import org.codehaus.plexus.component.annotations.Component;
 import org.codehaus.plexus.util.xml.Xpp3Dom;
 
 /**
  * Handles expansion of general report plugin configuration into individual report sets.
- * 
+ *
  * @author Benjamin Bentmann
  */
-@Component( role = ReportConfigurationExpander.class )
+@Named
+@Singleton
 public class DefaultReportConfigurationExpander
     implements ReportConfigurationExpander
 {
 
+    @Override
     public void expandPluginConfiguration( Model model, ModelBuildingRequest request, ModelProblemCollector problems )
     {
         Reporting reporting = model.getReporting();

@@ -30,13 +30,14 @@ import org.apache.maven.lifecycle.MissingProjectException;
 import org.apache.maven.lifecycle.NoGoalSpecifiedException;
 import org.apache.maven.lifecycle.internal.builder.Builder;
 import org.apache.maven.lifecycle.internal.builder.BuilderNotFoundException;
+import org.apache.maven.session.scope.internal.SessionScope;
 import org.codehaus.plexus.component.annotations.Component;
 import org.codehaus.plexus.component.annotations.Requirement;
 import org.codehaus.plexus.logging.Logger;
 
 /**
  * Starts the build life cycle
- * 
+ *
  * @author Jason van Zyl
  * @author Benjamin Bentmann
  * @author Kristian Rosenvold
@@ -64,6 +65,9 @@ public class LifecycleStarter
 
     @Requirement
     private Map<String, Builder> builders;
+    
+    @Requirement
+    private SessionScope sessionScope;
 
     public void execute( MavenSession session )
     {
@@ -102,20 +106,24 @@ public class LifecycleStarter
 
             ClassLoader oldContextClassLoader = Thread.currentThread().getContextClassLoader();
             ReactorBuildStatus reactorBuildStatus = new ReactorBuildStatus( session.getProjectDependencyGraph() );
-            reactorContext = new ReactorContext( result, projectIndex, oldContextClassLoader, reactorBuildStatus );
+            reactorContext =
+                new ReactorContext( result, projectIndex, oldContextClassLoader, reactorBuildStatus,
+                                    sessionScope.memento() );
 
             String builderId = session.getRequest().getBuilderId();
             Builder builder = builders.get( builderId );
             if ( builder == null )
             {
-                throw new BuilderNotFoundException( String.format( "The builder requested using id = %s cannot be found", builderId ) );
+                throw new BuilderNotFoundException( String.format( "The builder requested using id = %s cannot be"
+                    + " found", builderId ) );
             }
 
             int degreeOfConcurrency = session.getRequest().getDegreeOfConcurrency();
             if ( degreeOfConcurrency >= 2 )
             {
                 logger.info( "" );
-                logger.info( String.format( "Using the %s implementation with a thread count of %d", builder.getClass().getSimpleName(), degreeOfConcurrency ) );
+                logger.info( String.format( "Using the %s implementation with a thread count of %d",
+                                            builder.getClass().getSimpleName(), degreeOfConcurrency ) );
             }
             builder.build( session, reactorContext, projectBuilds, taskSegments, reactorBuildStatus );
 

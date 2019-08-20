@@ -27,7 +27,7 @@ import org.apache.maven.model.Model;
 
 /**
  * A simple model problem collector for testing the model building components.
- * 
+ *
  * @author Benjamin Bentmann
  */
 public class SimpleProblemCollector
@@ -35,11 +35,11 @@ public class SimpleProblemCollector
 {
     private Model model;
 
-    private List<String> warnings = new ArrayList<String>();
+    private List<String> warnings = new ArrayList<>();
 
-    private List<String> errors = new ArrayList<String>();
+    private List<String> errors = new ArrayList<>();
 
-    private List<String> fatals = new ArrayList<String>();
+    private List<String> fatals = new ArrayList<>();
 
     public SimpleProblemCollector()
     {

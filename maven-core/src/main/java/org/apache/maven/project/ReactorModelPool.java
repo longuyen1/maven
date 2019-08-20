@@ -26,13 +26,13 @@ import java.util.Map;
 /**
  * Holds all POM files that are known to the reactor. This allows the project builder to resolve imported POMs from the
  * reactor when building another project's effective model.
- * 
+ *
  * @author Benjamin Bentmann
  */
 class ReactorModelPool
 {
 
-    private final Map<CacheKey, File> pomFiles = new HashMap<CacheKey, File>();
+    private final Map<CacheKey, File> pomFiles = new HashMap<>();
 
     public File get( String groupId, String artifactId, String version )
     {
@@ -55,7 +55,7 @@ class ReactorModelPool
 
         private final int hashCode;
 
-        public CacheKey( String groupId, String artifactId, String version )
+        CacheKey( String groupId, String artifactId, String version )
         {
             this.groupId = ( groupId != null ) ? groupId : "";
             this.artifactId = ( artifactId != null ) ? artifactId : "";
@@ -96,7 +96,7 @@ class ReactorModelPool
         @Override
         public String toString()
         {
-            StringBuilder buffer = new StringBuilder( 96 );
+            StringBuilder buffer = new StringBuilder( 128 );
             buffer.append( groupId ).append( ':' ).append( artifactId ).append( ':' ).append( version );
             return buffer.toString();
         }

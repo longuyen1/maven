@@ -25,7 +25,7 @@ under the License.
   <parent>
     <groupId>org.apache.maven</groupId>
     <artifactId>maven</artifactId>
-    <version>3.2.4-SNAPSHOT</version>
+    <version>3.6.2-SNAPSHOT</version>
   </parent>
 
   <artifactId>maven-settings-builder</artifactId>
@@ -33,16 +33,21 @@ under the License.
   <name>Maven Settings Builder</name>
   <description>The effective settings builder, with inheritance and password decryption.</description>
 
-  <scm><!-- remove when git scm url format can accept artifact-id at the end, as automatically inherited -->
-    <connection>scm:git:https://git-wip-us.apache.org/repos/asf/maven.git</connection>
-    <developerConnection>scm:git:https://git-wip-us.apache.org/repos/asf/maven.git</developerConnection>
-    <tag>HEAD</tag>
-  </scm>
+  <contributors>
+    <contributor>
+      <name>Thomas Meyer</name>
+    </contributor>
+  </contributors>
 
   <dependencies>
     <dependency>
-      <groupId>org.codehaus.plexus</groupId>
-      <artifactId>plexus-utils</artifactId>
+      <groupId>org.apache.maven</groupId>
+      <artifactId>maven-builder-support</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>javax.inject</groupId>
+      <artifactId>javax.inject</artifactId>
     </dependency>
     <dependency>
       <groupId>org.codehaus.plexus</groupId>
@@ -50,7 +55,7 @@ under the License.
     </dependency>
     <dependency>
       <groupId>org.codehaus.plexus</groupId>
-      <artifactId>plexus-component-annotations</artifactId>
+      <artifactId>plexus-utils</artifactId>
     </dependency>
     <dependency>
       <groupId>org.apache.maven</groupId>
@@ -65,8 +70,8 @@ under the License.
   <build>
     <plugins>
       <plugin>
-        <groupId>org.codehaus.plexus</groupId>
-        <artifactId>plexus-component-metadata</artifactId>
+        <groupId>org.eclipse.sisu</groupId>
+        <artifactId>sisu-maven-plugin</artifactId>
       </plugin>
     </plugins>
   </build>

@@ -19,10 +19,7 @@ package org.apache.maven.repository.legacy.resolver.conflict;
  * under the License.
  */
 
-import java.util.Collections;
-
 import org.apache.maven.artifact.resolver.ResolutionNode;
-import org.apache.maven.repository.legacy.resolver.conflict.OldestConflictResolver;
 
 /**
  * Tests <code>OldestConflictResolver</code>.
@@ -34,44 +31,45 @@ public class OldestConflictResolverTest
     extends AbstractConflictResolverTest
 {
     // constructors -----------------------------------------------------------
-    
+
     public OldestConflictResolverTest()
         throws Exception
     {
         super("oldest");
     }
-    
+
     // tests ------------------------------------------------------------------
 
     /**
      * Tests that <code>a:1.0</code> wins in the scenario:
      * <pre>
      * a:1.0
-     * b:1.0 -> a:2.0
+     * b:1.0 -&gt; a:2.0
      * </pre>
      */
     public void testDepth()
     {
-        ResolutionNode a1n = new ResolutionNode( a1, Collections.EMPTY_LIST );
-        ResolutionNode b1n = new ResolutionNode( b1, Collections.EMPTY_LIST );
-        ResolutionNode a2n = new ResolutionNode( a2, Collections.EMPTY_LIST, b1n );
-        
+        ResolutionNode a1n = createResolutionNode( a1 );
+        ResolutionNode b1n = createResolutionNode( b1);
+        ResolutionNode a2n = createResolutionNode( a2,  b1n );
+
         assertResolveConflict( a1n, a1n, a2n );
     }
+
 
     /**
      * Tests that <code>a:1.0</code> wins in the scenario:
      * <pre>
-     * b:1.0 -> a:2.0
+     * b:1.0 -&gt; a:2.0
      * a:1.0
      * </pre>
      */
     public void testDepthReversed()
     {
-        ResolutionNode b1n = new ResolutionNode( b1, Collections.EMPTY_LIST );
-        ResolutionNode a2n = new ResolutionNode( a2, Collections.EMPTY_LIST, b1n );
-        ResolutionNode a1n = new ResolutionNode( a1, Collections.EMPTY_LIST );
-        
+        ResolutionNode b1n = createResolutionNode( b1 );
+        ResolutionNode a2n = createResolutionNode( a2, b1n );
+        ResolutionNode a1n = createResolutionNode( a1 );
+
         assertResolveConflict( a1n, a2n, a1n );
     }
 
@@ -84,9 +82,9 @@ public class OldestConflictResolverTest
      */
     public void testEqual()
     {
-        ResolutionNode a1n = new ResolutionNode( a1, Collections.EMPTY_LIST );
-        ResolutionNode a2n = new ResolutionNode( a2, Collections.EMPTY_LIST );
-        
+        ResolutionNode a1n = createResolutionNode( a1 );
+        ResolutionNode a2n = createResolutionNode( a2 );
+
         assertResolveConflict( a1n, a1n, a2n );
     }
 
@@ -99,9 +97,9 @@ public class OldestConflictResolverTest
      */
     public void testEqualReversed()
     {
-        ResolutionNode a2n = new ResolutionNode( a2, Collections.EMPTY_LIST );
-        ResolutionNode a1n = new ResolutionNode( a1, Collections.EMPTY_LIST );
-        
+        ResolutionNode a2n = createResolutionNode( a2);
+        ResolutionNode a1n = createResolutionNode( a1 );
+
         assertResolveConflict( a1n, a2n, a1n );
     }
 }

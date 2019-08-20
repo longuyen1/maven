@@ -24,8 +24,10 @@ import java.util.Date;
 import java.util.List;
 import java.util.Properties;
 
+import org.apache.maven.model.Model;
 import org.apache.maven.model.Profile;
 import org.apache.maven.model.resolution.ModelResolver;
+import org.apache.maven.model.resolution.WorkspaceModelResolver;
 
 /**
  * Collects settings that control the building of effective models.
@@ -61,6 +63,20 @@ public interface ModelBuildingRequest
      * Denotes strict validation as recommended by the current Maven version.
      */
     int VALIDATION_LEVEL_STRICT = VALIDATION_LEVEL_MAVEN_3_0;
+
+    /**
+     * Gets the raw model to build. If not set, model source will be used to load raw model.
+     *
+     * @return The raw model to build or {@code null} if not set.
+     */
+    Model getRawModel();
+
+    /**
+     * Set raw model.
+     *
+     * @param rawModel
+     */
+    ModelBuildingRequest setRawModel( Model rawModel );
 
     /**
      * Gets the source of the POM to process.
@@ -108,7 +124,7 @@ public interface ModelBuildingRequest
 
     /**
      * Sets the level of validation to perform on processed models. For building of projects,
-     * {@link #VALIDATION_LEVEL_STRICT} should be used to ensure proper building. For the mere retrievel of dependencies
+     * {@link #VALIDATION_LEVEL_STRICT} should be used to ensure proper building. For the mere retrieval of dependencies
      * during artifact resolution, {@link #VALIDATION_LEVEL_MINIMAL} should be used to account for models of poor
      * quality. By default, models are validated in strict mode.
      *
@@ -157,7 +173,7 @@ public interface ModelBuildingRequest
 
     /**
      * Indicates whether the model should track the line/column number of the model source from which it was parsed.
-     * 
+     *
      * @return {@code true} if location tracking is enabled, {@code false} otherwise.
      */
     boolean isLocationTracking();
@@ -165,7 +181,7 @@ public interface ModelBuildingRequest
     /**
      * Enables/disables the tracking of line/column numbers for the model source being parsed. By default, input
      * locations are not tracked.
-     * 
+     *
      * @param locationTracking {@code true} to enable location tracking, {@code false} to disable it.
      * @return This request, never {@code null}.
      */
@@ -279,7 +295,7 @@ public interface ModelBuildingRequest
      * Sets the model resolver to use for resolution of mixins or parents that are not locally reachable from the
      * project directory.
      *
-     * @param modelResolver The model resolver to use, may be {@code null}.
+     * @param modelResolver The model resolver to use, never {@code null}.
      * @return This request, never {@code null}.
      */
     ModelBuildingRequest setModelResolver( ModelResolver modelResolver );
@@ -314,5 +330,9 @@ public interface ModelBuildingRequest
      * @return This request, never {@code null}.
      */
     ModelBuildingRequest setModelCache( ModelCache modelCache );
+
+    WorkspaceModelResolver getWorkspaceModelResolver();
+
+    ModelBuildingRequest setWorkspaceModelResolver( WorkspaceModelResolver workspaceResolver );
 
 }

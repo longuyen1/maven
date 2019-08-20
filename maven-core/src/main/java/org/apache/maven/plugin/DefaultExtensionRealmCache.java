@@ -23,15 +23,16 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.apache.maven.artifact.Artifact;
 import org.apache.maven.project.ExtensionDescriptor;
 import org.apache.maven.project.MavenProject;
 import org.codehaus.plexus.classworlds.realm.ClassRealm;
 import org.codehaus.plexus.classworlds.realm.NoSuchRealmException;
 import org.codehaus.plexus.component.annotations.Component;
 import org.codehaus.plexus.personality.plexus.lifecycle.phase.Disposable;
-import org.eclipse.aether.artifact.Artifact;
 
 /**
  * Default extension realm cache implementation. Assumes cached data does not change.
@@ -40,7 +41,9 @@ import org.eclipse.aether.artifact.Artifact;
 public class DefaultExtensionRealmCache
     implements ExtensionRealmCache, Disposable
 {
-
+    /**
+     * CacheKey
+     */
     protected static class CacheKey
         implements Key
     {
@@ -55,12 +58,12 @@ public class DefaultExtensionRealmCache
 
         private final int hashCode;
 
-        public CacheKey( List<? extends Artifact> extensionArtifacts )
+        public CacheKey( List<Artifact> extensionArtifacts )
         {
-            this.files = new ArrayList<File>( extensionArtifacts.size() );
-            this.timestamps = new ArrayList<Long>( extensionArtifacts.size() );
-            this.sizes = new ArrayList<Long>( extensionArtifacts.size() );
-            this.ids = new ArrayList<String>( extensionArtifacts.size() );
+            this.files = new ArrayList<>( extensionArtifacts.size() );
+            this.timestamps = new ArrayList<>( extensionArtifacts.size() );
+            this.sizes = new ArrayList<>( extensionArtifacts.size() );
+            this.ids = new ArrayList<>( extensionArtifacts.size() );
 
             for ( Artifact artifact : extensionArtifacts )
             {
@@ -107,10 +110,10 @@ public class DefaultExtensionRealmCache
         }
     }
 
-    protected final Map<Key, CacheRecord> cache = new ConcurrentHashMap<Key, CacheRecord>();
+    protected final Map<Key, CacheRecord> cache = new ConcurrentHashMap<>();
 
     @Override
-    public Key createKey( List<? extends Artifact> extensionArtifacts )
+    public Key createKey( List<Artifact> extensionArtifacts )
     {
         return new CacheKey( extensionArtifacts );
     }
@@ -120,19 +123,17 @@ public class DefaultExtensionRealmCache
         return cache.get( key );
     }
 
-    public CacheRecord put( Key key, ClassRealm extensionRealm, ExtensionDescriptor extensionDescriptor )
+    public CacheRecord put( Key key, ClassRealm extensionRealm, ExtensionDescriptor extensionDescriptor,
+                            List<Artifact> artifacts )
     {
-        if ( extensionRealm == null )
-        {
-            throw new NullPointerException();
-        }
+        Objects.requireNonNull( extensionRealm, "extensionRealm cannot be null" );
 
         if ( cache.containsKey( key ) )
         {
             throw new IllegalStateException( "Duplicate extension realm for extension " + key );
         }
 
-        CacheRecord record = new CacheRecord( extensionRealm, extensionDescriptor );
+        CacheRecord record = new CacheRecord( extensionRealm, extensionDescriptor, artifacts );
 
         cache.put( key, record );
 
@@ -143,7 +144,7 @@ public class DefaultExtensionRealmCache
     {
         for ( CacheRecord record : cache.values() )
         {
-            ClassRealm realm = record.realm;
+            ClassRealm realm = record.getRealm();
             try
             {
                 realm.getWorld().disposeRealm( realm.getId() );

@@ -22,6 +22,7 @@ package org.apache.maven.artifact.repository;
 import java.io.File;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 import org.apache.maven.RepositoryUtils;
 import org.apache.maven.artifact.metadata.ArtifactMetadata;
@@ -47,7 +48,7 @@ import org.eclipse.aether.repository.RemoteRepository;
 /**
  * <strong>Warning:</strong> This is an internal utility class that is only public for technical reasons, it is not part
  * of the public API. In particular, this class can be changed or deleted without prior notice.
- * 
+ *
  * @author Benjamin Bentmann
  */
 public class LegacyLocalRepositoryManager
@@ -88,11 +89,7 @@ public class LegacyLocalRepositoryManager
 
     private LegacyLocalRepositoryManager( ArtifactRepository delegate )
     {
-        if ( delegate == null )
-        {
-            throw new IllegalArgumentException( "local repository delegate missing" );
-        }
-        this.delegate = delegate;
+        this.delegate = Objects.requireNonNull( delegate, "delegate cannot be null" );
 
         ArtifactRepositoryLayout layout = delegate.getLayout();
         repo =
@@ -200,7 +197,7 @@ public class LegacyLocalRepositoryManager
 
         private final Metadata metadata;
 
-        public ArtifactMetadataAdapter( Metadata metadata )
+        ArtifactMetadataAdapter( Metadata metadata )
         {
             this.metadata = metadata;
         }
@@ -294,7 +291,7 @@ public class LegacyLocalRepositoryManager
 
         private final RemoteRepository repository;
 
-        public ArtifactRepositoryAdapter( RemoteRepository repository )
+        ArtifactRepositoryAdapter( RemoteRepository repository )
         {
             this.repository = repository;
         }

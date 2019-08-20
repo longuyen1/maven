@@ -19,26 +19,23 @@ package org.apache.maven.model.building;
  * under the License.
  */
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import org.apache.maven.building.StringSource;
 
 /**
  * Wraps an ordinary {@link CharSequence} as a model source.
- * 
+ *
  * @author Benjamin Bentmann
+ * 
+ * @deprecated instead use {@link StringSource}
  */
-public class StringModelSource
+@Deprecated
+public class StringModelSource extends StringSource
     implements ModelSource
 {
 
-    private String pom;
-
-    private String location;
-
     /**
      * Creates a new model source backed by the specified string.
-     * 
+     *
      * @param pom The POM's string representation, may be empty or {@code null}.
      */
     public StringModelSource( CharSequence pom )
@@ -48,41 +45,12 @@ public class StringModelSource
 
     /**
      * Creates a new model source backed by the specified string.
-     * 
+     *
      * @param pom The POM's string representation, may be empty or {@code null}.
      * @param location The location to report for this use, may be {@code null}.
      */
     public StringModelSource( CharSequence pom, String location )
     {
-        this.pom = ( pom != null ) ? pom.toString() : "";
-        this.location = ( location != null ) ? location : "(memory)";
+        super( pom, location );
     }
-
-    public InputStream getInputStream()
-        throws IOException
-    {
-        return new ByteArrayInputStream( pom.getBytes( "UTF-8" ) );
-    }
-
-    public String getLocation()
-    {
-        return location;
-    }
-
-    /**
-     * Gets the character sequence of this model source.
-     * 
-     * @return The underlying character stream, never {@code null}.
-     */
-    public String getModel()
-    {
-        return pom;
-    }
-
-    @Override
-    public String toString()
-    {
-        return getLocation();
-    }
-
 }

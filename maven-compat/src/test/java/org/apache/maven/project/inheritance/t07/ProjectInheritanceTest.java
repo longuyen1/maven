@@ -20,7 +20,6 @@ package org.apache.maven.project.inheritance.t07;
  */
 
 import java.io.File;
-import java.util.Iterator;
 import java.util.Set;
 
 import org.apache.maven.artifact.Artifact;
@@ -38,7 +37,7 @@ public class ProjectInheritanceTest
     // ----------------------------------------------------------------------
     //
     // p1 inherits from p0
-    // p0 inhertis from super model
+    // p0 inherits from super model
     //
     // or we can show it graphically as:
     //

@@ -32,6 +32,9 @@ import org.apache.maven.artifact.resolver.filter.ArtifactFilter;
 import org.apache.maven.artifact.versioning.ArtifactVersion;
 import org.apache.maven.artifact.versioning.OverConstrainedVersionException;
 
+/**
+ * ResolutionNode
+ */
 public class ResolutionNode
 {
     private Artifact artifact;
@@ -64,7 +67,7 @@ public class ResolutionNode
         this.artifact = artifact;
         this.remoteRepositories = remoteRepositories;
         depth = parent.depth + 1;
-        parents = new ArrayList<Object>();
+        parents = new ArrayList<>();
         parents.addAll( parent.parents );
         parents.add( parent.getKey() );
         this.parent = parent;
@@ -86,7 +89,7 @@ public class ResolutionNode
     {
         if ( artifacts != null && !artifacts.isEmpty() )
         {
-            children = new ArrayList<ResolutionNode>( artifacts.size() );
+            children = new ArrayList<>( artifacts.size() );
 
             for ( Artifact a : artifacts )
             {
@@ -99,6 +102,7 @@ public class ResolutionNode
 
                 children.add( new ResolutionNode( a, remoteRepositories, this ) );
             }
+            children = Collections.unmodifiableList( children );
         }
         else
         {
@@ -108,7 +112,7 @@ public class ResolutionNode
     }
 
     /**
-     * @return {@link List} &lt; {@link String} > with artifact ids
+     * @return {@link List} &lt; {@link String} &gt; with artifact ids
      * @throws OverConstrainedVersionException
      */
     public List<String> getDependencyTrail()
@@ -116,7 +120,7 @@ public class ResolutionNode
     {
         List<Artifact> trial = getTrail();
 
-        List<String> ret = new ArrayList<String>( trial.size() );
+        List<String> ret = new ArrayList<>( trial.size() );
 
         for ( Artifact artifact : trial )
         {
@@ -131,7 +135,7 @@ public class ResolutionNode
     {
         if ( trail == null )
         {
-            List<Artifact> ids = new LinkedList<Artifact>();
+            List<Artifact> ids = new LinkedList<>();
             ResolutionNode node = this;
             while ( node != null )
             {
@@ -198,7 +202,7 @@ public class ResolutionNode
     {
         active = true;
 
-        // TODO: if it was null, we really need to go find them now... or is this taken care of by the ordering?
+        // TODO if it was null, we really need to go find them now... or is this taken care of by the ordering?
         if ( children != null )
         {
             for ( ResolutionNode node : children )

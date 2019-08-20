@@ -25,12 +25,12 @@ import java.util.List;
 
 /**
  * Describes the required task segment as provided on the maven command line; i.e. "clean jetty:run install"
+ *
+ * <strong>NOTE:</strong> This class is not part of any public api and can be changed or deleted without prior notice.
  * 
  * @since 3.0
  * @author Benjamin Bentmann
  * @author Kristian Rosenvold (extracted class only)
- *         <p/>
- *         NOTE: This class is not part of any public api and can be changed or deleted without prior notice.
  */
 public final class TaskSegment
 {
@@ -44,13 +44,13 @@ public final class TaskSegment
     public TaskSegment( boolean aggregating )
     {
         this.aggregating = aggregating;
-        tasks = new ArrayList<Object>();
+        tasks = new ArrayList<>();
     }
 
     public TaskSegment( boolean aggregating, Object... tasks )
     {
         this.aggregating = aggregating;
-        this.tasks = new ArrayList<Object>( Arrays.asList( tasks ) );
+        this.tasks = new ArrayList<>( Arrays.asList( tasks ) );
     }
 
     @Override
@@ -69,5 +69,5 @@ public final class TaskSegment
         return aggregating;
     }
 
-    // TODO: Consider throwing UnsupprtedSomething on hashCode/equals
+    // TODO Consider throwing UnsupportedSomething on hashCode/equals
 }

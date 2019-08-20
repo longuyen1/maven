@@ -26,16 +26,18 @@ import org.apache.maven.project.MavenProject;
 
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
 /**
+ * <p>
  * Presents a view of the Dependency Graph that is suited for concurrent building.
- * 
+ * </p>
+ * <strong>NOTE:</strong> This class is not part of any public api and can be changed or deleted without prior notice.
+ *
  * @since 3.0
  * @author Kristian Rosenvold
- *         <p/>
- *         NOTE: This class is not part of any public api and can be changed or deleted without prior notice.
  */
 public class ConcurrencyDependencyGraph
 {
@@ -44,7 +46,7 @@ public class ConcurrencyDependencyGraph
 
     private final ProjectDependencyGraph projectDependencyGraph;
 
-    private final HashSet<MavenProject> finishedProjects = new HashSet<MavenProject>();
+    private final Set<MavenProject> finishedProjects = new HashSet<>();
 
     public ConcurrencyDependencyGraph( ProjectBuildList projectBuilds, ProjectDependencyGraph projectDependencyGraph )
     {
@@ -59,26 +61,26 @@ public class ConcurrencyDependencyGraph
 
     /**
      * Gets all the builds that have no reactor-dependencies
-     * 
-     * @return A list of all the initial builds
+     *
+     * @return A set of all the initial builds
      */
 
     public List<MavenProject> getRootSchedulableBuilds()
     {
-        List<MavenProject> result = new ArrayList<MavenProject>();
+        Set<MavenProject> result = new LinkedHashSet<>();
         for ( ProjectSegment projectBuild : projectBuilds )
         {
-            if ( projectDependencyGraph.getUpstreamProjects( projectBuild.getProject(), false ).size() == 0 )
+            if ( projectDependencyGraph.getUpstreamProjects( projectBuild.getProject(), false ).isEmpty() )
             {
                 result.add( projectBuild.getProject() );
             }
         }
-        return result;
+        return new ArrayList<>( result );
     }
 
     /**
      * Marks the provided project as finished. Returns a list of
-     * 
+     *
      * @param mavenProject The project
      * @return The list of builds that are eligible for starting now that the provided project is done
      */
@@ -90,7 +92,7 @@ public class ConcurrencyDependencyGraph
 
     private List<MavenProject> getSchedulableNewProcesses( MavenProject finishedProject )
     {
-        List<MavenProject> result = new ArrayList<MavenProject>();
+        List<MavenProject> result = new ArrayList<>();
         // schedule dependent projects, if all of their requirements are met
         for ( MavenProject dependentProject : projectDependencyGraph.getDownstreamProjects( finishedProject, false ) )
         {
@@ -109,8 +111,8 @@ public class ConcurrencyDependencyGraph
      */
     public Set<MavenProject> getUnfinishedProjects()
     {
-        Set<MavenProject> unfinished = new HashSet<MavenProject>( projectBuilds.getProjects() );
-        unfinished.remove( finishedProjects );
+        Set<MavenProject> unfinished = new HashSet<>( projectBuilds.getProjects() );
+        unfinished.removeAll( finishedProjects );
         return unfinished;
     }
 
@@ -129,7 +131,7 @@ public class ConcurrencyDependencyGraph
 
     /**
      * For the given {@link MavenProject} {@code p}, return all of {@code p}'s dependencies.
-     * 
+     *
      * @param p
      * @return List of prerequisite projects
      */
@@ -140,7 +142,7 @@ public class ConcurrencyDependencyGraph
 
     /**
      * For the given {@link MavenProject} {@code p} return {@code p}'s uncompleted dependencies.
-     * 
+     *
      * @param p
      * @return List of uncompleted prerequisite projects
      */

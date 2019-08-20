@@ -27,7 +27,7 @@ import org.codehaus.plexus.interpolation.InterpolationPostProcessor;
 
 /**
  * Ensures that expressions referring to URLs evaluate to normalized URLs.
- * 
+ *
  * @author Benjamin Bentmann
  */
 class UrlNormalizingPostProcessor
@@ -38,7 +38,7 @@ class UrlNormalizingPostProcessor
 
     static
     {
-        Set<String> expressions = new HashSet<String>();
+        Set<String> expressions = new HashSet<>();
         expressions.add( "project.url" );
         expressions.add( "project.scm.url" );
         expressions.add( "project.scm.connection" );
@@ -50,11 +50,12 @@ class UrlNormalizingPostProcessor
 
     private UrlNormalizer normalizer;
 
-    public UrlNormalizingPostProcessor( UrlNormalizer normalizer )
+    UrlNormalizingPostProcessor( UrlNormalizer normalizer )
     {
         this.normalizer = normalizer;
     }
 
+    @Override
     public Object execute( String expression, Object value )
     {
         if ( value != null && URL_EXPRESSIONS.contains( expression ) )

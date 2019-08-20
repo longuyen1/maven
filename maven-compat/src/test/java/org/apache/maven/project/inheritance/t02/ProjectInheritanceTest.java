@@ -21,12 +21,10 @@ package org.apache.maven.project.inheritance.t02;
 
 import java.io.File;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
 import org.apache.maven.model.Build;
-import org.apache.maven.model.MailingList;
 import org.apache.maven.model.Plugin;
 import org.apache.maven.project.MavenProject;
 import org.apache.maven.project.inheritance.AbstractProjectInheritanceTestCase;
@@ -51,7 +49,7 @@ public class ProjectInheritanceTest
     // p3 inherits from p2
     // p2 inherits from p1
     // p1 inherits from p0
-    // p0 inhertis from super model
+    // p0 inherits from super model
     //
     // or we can show it graphically as:
     //
@@ -63,16 +61,16 @@ public class ProjectInheritanceTest
         throws Exception
     {
         File localRepo = getLocalRepositoryPath();
-        
+
         System.out.println( "Local repository is at: " + localRepo.getAbsolutePath() );
-        
+
         File pom0 = new File( localRepo, "p0/pom.xml" );
         File pom1 = new File( pom0.getParentFile(), "p1/pom.xml" );
         File pom2 = new File( pom1.getParentFile(), "p2/pom.xml" );
         File pom3 = new File( pom2.getParentFile(), "p3/pom.xml" );
         File pom4 = new File( pom3.getParentFile(), "p4/pom.xml" );
         File pom5 = new File( pom4.getParentFile(), "p5/pom.xml" );
-        
+
         System.out.println( "Location of project-4's POM: " + pom4.getPath() );
 
         // load everything...
@@ -114,22 +112,22 @@ public class ProjectInheritanceTest
         // ----------------------------------------------------------------------
 
         assertEquals( "4.0.0", project4.getModelVersion() );
-        
+
         Build build = project4.getBuild();
         List<Plugin> plugins = build.getPlugins();
-        
-        Map validPluginCounts = new HashMap();
-        
+
+        Map<String, Integer> validPluginCounts = new HashMap<>();
+
         String testPluginArtifactId = "maven-compiler-plugin";
-        
+
         // this is the plugin we're looking for.
         validPluginCounts.put( testPluginArtifactId, 0 );
-        
+
         // these are injected if -DperformRelease=true
         validPluginCounts.put( "maven-deploy-plugin", 0 );
         validPluginCounts.put( "maven-javadoc-plugin", 0 );
         validPluginCounts.put( "maven-source-plugin", 0 );
-        
+
         Plugin testPlugin = null;
 
         for ( Plugin plugin : plugins )
@@ -147,7 +145,7 @@ public class ProjectInheritanceTest
                     testPlugin = plugin;
                 }
 
-                Integer count = (Integer) validPluginCounts.get( pluginArtifactId );
+                Integer count = validPluginCounts.get( pluginArtifactId );
 
                 if ( count > 0 )
                 {
@@ -161,9 +159,9 @@ public class ProjectInheritanceTest
                 }
             }
         }
-        
+
         List executions = testPlugin.getExecutions();
-        
+
         assertEquals( 1, executions.size() );
     }
 }

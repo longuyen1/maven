@@ -19,6 +19,8 @@ package org.apache.maven.lifecycle.internal;
  * under the License.
  */
 
+import java.io.File;
+
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -28,10 +30,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import javax.inject.Inject;
+import javax.inject.Named;
+
 import org.apache.maven.RepositoryUtils;
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.ArtifactUtils;
-import org.apache.maven.artifact.factory.ArtifactFactory;
 import org.apache.maven.eventspy.internal.EventSpyDispatcher;
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.lifecycle.LifecycleExecutionException;
@@ -41,8 +45,7 @@ import org.apache.maven.project.DependencyResolutionResult;
 import org.apache.maven.project.MavenProject;
 import org.apache.maven.project.ProjectDependenciesResolver;
 import org.apache.maven.project.artifact.InvalidDependencyVersionException;
-import org.codehaus.plexus.component.annotations.Component;
-import org.codehaus.plexus.component.annotations.Requirement;
+import org.apache.maven.project.artifact.ProjectArtifactsCache;
 import org.codehaus.plexus.logging.Logger;
 import org.eclipse.aether.graph.Dependency;
 import org.eclipse.aether.graph.DependencyFilter;
@@ -51,30 +54,33 @@ import org.eclipse.aether.util.filter.AndDependencyFilter;
 import org.eclipse.aether.util.filter.ScopeDependencyFilter;
 
 /**
+ * <p>
  * Resolves dependencies for the artifacts in context of the lifecycle build
- * 
+ * </p>
+ * <strong>NOTE:</strong> This class is not part of any public api and can be changed or deleted without prior notice.
  * @since 3.0
  * @author Benjamin Bentmann
  * @author Jason van Zyl
  * @author Kristian Rosenvold (extracted class)
- *         <p/>
- *         NOTE: This class is not part of any public api and can be changed or deleted without prior notice.
  */
-@Component( role = LifecycleDependencyResolver.class )
+@Named
 public class LifecycleDependencyResolver
 {
 
-    @Requirement
+    @Inject
     private ProjectDependenciesResolver dependenciesResolver;
 
-    @Requirement
+    @Inject
     private Logger logger;
 
-    @Requirement
-    private ArtifactFactory artifactFactory;
+    @Inject
+    private ProjectArtifactFactory artifactFactory;
 
-    @Requirement
+    @Inject
     private EventSpyDispatcher eventSpyDispatcher;
+    
+    @Inject
+    private ProjectArtifactsCache projectArtifactsCache;
 
     public LifecycleDependencyResolver()
     {
@@ -116,24 +122,66 @@ public class LifecycleDependencyResolver
             {
                 try
                 {
-                    project.setDependencyArtifacts( project.createArtifacts( artifactFactory, null, null ) );
+                    project.setDependencyArtifacts( artifactFactory.createArtifacts( project ) );
                 }
                 catch ( InvalidDependencyVersionException e )
                 {
                     throw new LifecycleExecutionException( e );
                 }
             }
-
-            Set<Artifact> artifacts =
-                getDependencies( project, scopesToCollect, scopesToResolve, session, aggregating, projectArtifacts );
-
-            project.setResolvedArtifacts( artifacts );
-
-            Map<String, Artifact> map = new HashMap<String, Artifact>();
-            for ( Artifact artifact : artifacts )
+            
+            Set<Artifact> resolvedArtifacts;
+            ProjectArtifactsCache.Key cacheKey = projectArtifactsCache.createKey( project,  scopesToCollect, 
+                scopesToResolve, aggregating, session.getRepositorySession() );
+            ProjectArtifactsCache.CacheRecord recordArtifacts;
+            recordArtifacts = projectArtifactsCache.get( cacheKey );
+            
+            if ( recordArtifacts != null )
             {
+                resolvedArtifacts = recordArtifacts.getArtifacts();
+            }
+            else
+            {
+                try
+                {
+                    resolvedArtifacts = getDependencies( project, scopesToCollect, scopesToResolve, session,
+                                                         aggregating, projectArtifacts );
+                    recordArtifacts = projectArtifactsCache.put( cacheKey, resolvedArtifacts );
+                }
+                catch ( LifecycleExecutionException e )
+                {
+                  projectArtifactsCache.put( cacheKey, e );
+                  projectArtifactsCache.register( project, cacheKey, recordArtifacts );
+                    throw e;
+                }
+            }
+            projectArtifactsCache.register( project, cacheKey, recordArtifacts );
+
+            Map<Artifact, File> reactorProjects = new HashMap<>( session.getProjects().size() );
+            for ( MavenProject reactorProject : session.getProjects() )
+            {
+                reactorProjects.put( reactorProject.getArtifact(), reactorProject.getArtifact().getFile() );
+            }
+
+            Map<String, Artifact> map = new HashMap<>();
+            for ( Artifact artifact : resolvedArtifacts )
+            {
+                /**
+                 * MNG-6300: resolvedArtifacts can be cache result; this ensures reactor files are always up to date 
+                 * During lifecycle the Artifact.getFile() can change from target/classes to the actual jar.
+                 * This clearly shows that target/classes should not be abused as artifactFile just for the classpath
+                 */
+                File reactorProjectFile = reactorProjects.get( artifact );
+                if ( reactorProjectFile != null )
+                {
+                    artifact.setFile( reactorProjectFile );
+                }
+
                 map.put( artifact.getDependencyConflictId(), artifact );
             }
+            
+            project.setResolvedArtifacts( resolvedArtifacts );
+            
             for ( Artifact artifact : project.getDependencyArtifacts() )
             {
                 if ( artifact.getFile() == null )
@@ -171,10 +219,10 @@ public class LifecycleDependencyResolver
 
         if ( scopesToCollect.isEmpty() && scopesToResolve.isEmpty() )
         {
-            return new LinkedHashSet<Artifact>();
+            return new LinkedHashSet<>();
         }
 
-        scopesToCollect = new HashSet<String>( scopesToCollect );
+        scopesToCollect = new HashSet<>( scopesToCollect );
         scopesToCollect.addAll( scopesToResolve );
 
         DependencyFilter collectionFilter = new ScopeDependencyFilter( null, negate( scopesToCollect ) );
@@ -203,7 +251,8 @@ public class LifecycleDependencyResolver
              * plugins that require dependency resolution although they usually run in phases of the build where project
              * artifacts haven't been assembled yet. The prime example of this is "mvn release:prepare".
              */
-            if ( aggregating && areAllDependenciesInReactor( session.getProjects(), result.getUnresolvedDependencies() ) )
+            if ( aggregating && areAllDependenciesInReactor( session.getProjects(),
+                                                             result.getUnresolvedDependencies() ) )
             {
                 logger.warn( "The following dependencies could not be resolved at this point of the build"
                     + " but seem to be part of the reactor:" );
@@ -223,7 +272,7 @@ public class LifecycleDependencyResolver
 
         eventSpyDispatcher.onEvent( result );
 
-        Set<Artifact> artifacts = new LinkedHashSet<Artifact>();
+        Set<Artifact> artifacts = new LinkedHashSet<>();
         if ( result.getDependencyGraph() != null && !result.getDependencyGraph().getChildren().isEmpty() )
         {
             RepositoryUtils.toArtifacts( artifacts, result.getDependencyGraph().getChildren(),
@@ -232,7 +281,8 @@ public class LifecycleDependencyResolver
         return artifacts;
     }
 
-    private boolean areAllDependenciesInReactor( Collection<MavenProject> projects, Collection<Dependency> dependencies )
+    private boolean areAllDependenciesInReactor( Collection<MavenProject> projects,
+                                                 Collection<Dependency> dependencies )
     {
         Set<String> projectKeys = getReactorProjectKeys( projects );
 
@@ -251,7 +301,7 @@ public class LifecycleDependencyResolver
 
     private Set<String> getReactorProjectKeys( Collection<MavenProject> projects )
     {
-        Set<String> projectKeys = new HashSet<String>( projects.size() * 2 );
+        Set<String> projectKeys = new HashSet<>( projects.size() * 2 );
         for ( MavenProject project : projects )
         {
             String key = ArtifactUtils.key( project.getGroupId(), project.getArtifactId(), project.getVersion() );
@@ -262,7 +312,7 @@ public class LifecycleDependencyResolver
 
     private Collection<String> negate( Collection<String> scopes )
     {
-        Collection<String> result = new HashSet<String>();
+        Collection<String> result = new HashSet<>();
         Collections.addAll( result, "system", "compile", "provided", "runtime", "test" );
 
         for ( String scope : scopes )
@@ -304,9 +354,9 @@ public class LifecycleDependencyResolver
         implements DependencyFilter
     {
 
-        private Set<String> keys = new HashSet<String>();
+        private Set<String> keys = new HashSet<>();
 
-        public ReactorDependencyFilter( Collection<Artifact> artifacts )
+        ReactorDependencyFilter( Collection<Artifact> artifacts )
         {
             for ( Artifact artifact : artifacts )
             {

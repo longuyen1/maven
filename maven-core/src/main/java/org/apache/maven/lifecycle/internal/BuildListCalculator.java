@@ -29,16 +29,17 @@ import java.util.Collections;
 import java.util.List;
 
 /**
+ * <strong>NOTE:</strong> This class is not part of any public api and can be changed or deleted without prior notice.
+ * 
  * @since 3.0
  * @author Kristian Rosenvold
- *         This class is not part of any public api and can be changed or deleted without prior notice.
  */
 @Component( role = BuildListCalculator.class )
 public class BuildListCalculator
 {
     public ProjectBuildList calculateProjectBuilds( MavenSession session, List<TaskSegment> taskSegments )
     {
-        List<ProjectSegment> projectBuilds = new ArrayList<ProjectSegment>();
+        List<ProjectSegment> projectBuilds = new ArrayList<>();
 
         MavenProject rootProject = session.getTopLevelProject();
 

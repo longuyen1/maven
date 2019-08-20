@@ -144,6 +144,9 @@ public class LegacyRepositorySystem
         }
         catch ( InvalidVersionSpecificationException e )
         {
+            // MNG-5368: Log a message instead of returning 'null' silently.
+            this.logger.error( String.format( "Invalid version specification '%s' creating dependency artifact '%s'.",
+                                              d.getVersion(), d ), e );
             return null;
         }
 
@@ -158,7 +161,7 @@ public class LegacyRepositorySystem
 
         if ( !d.getExclusions().isEmpty() )
         {
-            List<String> exclusions = new ArrayList<String>();
+            List<String> exclusions = new ArrayList<>();
 
             for ( Exclusion exclusion : d.getExclusions() )
             {
@@ -180,6 +183,11 @@ public class LegacyRepositorySystem
         }
         catch ( InvalidVersionSpecificationException e )
         {
+            // MNG-5368: Log a message instead of returning 'null' silently.
+            this.logger.error( String.format(
+                "Invalid version specification '%s' creating extension artifact '%s:%s:%s'.",
+                version, groupId, artifactId, version ), e );
+
             return null;
         }
 
@@ -193,18 +201,24 @@ public class LegacyRepositorySystem
 
     public Artifact createPluginArtifact( Plugin plugin )
     {
+        String version = plugin.getVersion();
+        if ( StringUtils.isEmpty( version ) )
+        {
+            version = "RELEASE";
+        }
+
         VersionRange versionRange;
         try
         {
-            String version = plugin.getVersion();
-            if ( StringUtils.isEmpty( version ) )
-            {
-                version = "RELEASE";
-            }
             versionRange = VersionRange.createFromVersionSpec( version );
         }
         catch ( InvalidVersionSpecificationException e )
         {
+            // MNG-5368: Log a message instead of returning 'null' silently.
+            this.logger.error( String.format(
+                "Invalid version specification '%s' creating plugin artifact '%s'.",
+                version, plugin ), e );
+
             return null;
         }
 
@@ -315,7 +329,7 @@ public class LegacyRepositorySystem
                 DelegatingLocalArtifactRepository delegatingLocalRepository =
                     (DelegatingLocalArtifactRepository) request.getLocalRepository();
 
-                LocalArtifactRepository orig = delegatingLocalRepository.getIdeWorspace();
+                LocalArtifactRepository orig = delegatingLocalRepository.getIdeWorkspace();
 
                 delegatingLocalRepository.setIdeWorkspace( ideWorkspace );
 
@@ -353,22 +367,21 @@ public class LegacyRepositorySystem
         return artifactResolver.resolve( request );
     }
 
-    /*
-    public void addProxy( String protocol, String host, int port, String username, String password, String nonProxyHosts )
-    {
-        ProxyInfo proxyInfo = new ProxyInfo();
-        proxyInfo.setHost( host );
-        proxyInfo.setType( protocol );
-        proxyInfo.setPort( port );
-        proxyInfo.setNonProxyHosts( nonProxyHosts );
-        proxyInfo.setUserName( username );
-        proxyInfo.setPassword( password );
-
-        proxies.put( protocol, proxyInfo );
-
-        wagonManager.addProxy( protocol, host, port, username, password, nonProxyHosts );
-    }
-    */
+//    public void addProxy( String protocol, String host, int port, String username, String password,
+//                          String nonProxyHosts )
+//    {
+//        ProxyInfo proxyInfo = new ProxyInfo();
+//        proxyInfo.setHost( host );
+//        proxyInfo.setType( protocol );
+//        proxyInfo.setPort( port );
+//        proxyInfo.setNonProxyHosts( nonProxyHosts );
+//        proxyInfo.setUserName( username );
+//        proxyInfo.setPassword( password );
+//
+//        proxies.put( protocol, proxyInfo );
+//
+//        wagonManager.addProxy( protocol, host, port, username, password, nonProxyHosts );
+//    }
 
     public List<ArtifactRepository> getEffectiveRepositories( List<ArtifactRepository> repositories )
     {
@@ -377,7 +390,7 @@ public class LegacyRepositorySystem
             return null;
         }
 
-        Map<String, List<ArtifactRepository>> reposByKey = new LinkedHashMap<String, List<ArtifactRepository>>();
+        Map<String, List<ArtifactRepository>> reposByKey = new LinkedHashMap<>();
 
         for ( ArtifactRepository repository : repositories )
         {
@@ -387,21 +400,21 @@ public class LegacyRepositorySystem
 
             if ( aliasedRepos == null )
             {
-                aliasedRepos = new ArrayList<ArtifactRepository>();
+                aliasedRepos = new ArrayList<>();
                 reposByKey.put( key, aliasedRepos );
             }
 
             aliasedRepos.add( repository );
         }
 
-        List<ArtifactRepository> effectiveRepositories = new ArrayList<ArtifactRepository>();
+        List<ArtifactRepository> effectiveRepositories = new ArrayList<>();
 
         for ( List<ArtifactRepository> aliasedRepos : reposByKey.values() )
         {
-            List<ArtifactRepository> mirroredRepos = new ArrayList<ArtifactRepository>();
+            List<ArtifactRepository> mirroredRepos = new ArrayList<>();
 
             List<ArtifactRepositoryPolicy> releasePolicies =
-                new ArrayList<ArtifactRepositoryPolicy>( aliasedRepos.size() );
+                new ArrayList<>( aliasedRepos.size() );
 
             for ( ArtifactRepository aliasedRepo : aliasedRepos )
             {
@@ -412,7 +425,7 @@ public class LegacyRepositorySystem
             ArtifactRepositoryPolicy releasePolicy = getEffectivePolicy( releasePolicies );
 
             List<ArtifactRepositoryPolicy> snapshotPolicies =
-                new ArrayList<ArtifactRepositoryPolicy>( aliasedRepos.size() );
+                new ArrayList<>( aliasedRepos.size() );
 
             for ( ArtifactRepository aliasedRepo : aliasedRepos )
             {
@@ -532,7 +545,7 @@ public class LegacyRepositorySystem
     {
         if ( repositories != null )
         {
-            Map<String, Server> serversById = new HashMap<String, Server>();
+            Map<String, Server> serversById = new HashMap<>();
 
             if ( servers != null )
             {
@@ -869,7 +882,7 @@ public class LegacyRepositorySystem
 
         private final ArtifactRepositoryLayout fallback;
 
-        public UnknownRepositoryLayout( String id, ArtifactRepositoryLayout fallback )
+        UnknownRepositoryLayout( String id, ArtifactRepositoryLayout fallback )
         {
             this.id = id;
             this.fallback = fallback;

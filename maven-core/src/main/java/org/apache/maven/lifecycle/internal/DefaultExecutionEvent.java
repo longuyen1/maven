@@ -26,7 +26,7 @@ import org.apache.maven.project.MavenProject;
 
 /**
  * Holds data relevant for an execution event.
- * 
+ *
  * @author Benjamin Bentmann
  */
 class DefaultExecutionEvent
@@ -41,7 +41,7 @@ class DefaultExecutionEvent
 
     private final Exception exception;
 
-    public DefaultExecutionEvent( Type type, MavenSession session, MojoExecution mojoExecution, Exception exception )
+    DefaultExecutionEvent( Type type, MavenSession session, MojoExecution mojoExecution, Exception exception )
     {
         this.type = type;
         this.session = session;

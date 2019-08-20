@@ -34,7 +34,7 @@ import org.apache.maven.artifact.versioning.VersionRange;
 
 /**
  * Maven Artifact interface. Notice that it mixes artifact definition concepts (groupId, artifactId, version)
- * with dependency information (version range, scope). 
+ * with dependency information (version range, scope).
  */
 public interface Artifact
     extends Comparable<Artifact>
@@ -46,9 +46,9 @@ public interface Artifact
 
     String SNAPSHOT_VERSION = "SNAPSHOT";
 
-    Pattern VERSION_FILE_PATTERN = Pattern.compile( "^(.*)-([0-9]{8}.[0-9]{6})-([0-9]+)$" );
+    Pattern VERSION_FILE_PATTERN = Pattern.compile( "^(.*)-([0-9]{8}\\.[0-9]{6})-([0-9]+)$" );
 
-    // TODO: into artifactScope handler
+    // TODO into artifactScope handler
 
     String SCOPE_COMPILE = "compile";
 

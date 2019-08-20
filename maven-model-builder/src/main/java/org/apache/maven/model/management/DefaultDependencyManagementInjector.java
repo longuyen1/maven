@@ -24,6 +24,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import javax.inject.Named;
+import javax.inject.Singleton;
+
 import org.apache.maven.model.Dependency;
 import org.apache.maven.model.DependencyManagement;
 import org.apache.maven.model.Exclusion;
@@ -31,25 +34,30 @@ import org.apache.maven.model.Model;
 import org.apache.maven.model.building.ModelBuildingRequest;
 import org.apache.maven.model.building.ModelProblemCollector;
 import org.apache.maven.model.merge.MavenModelMerger;
-import org.codehaus.plexus.component.annotations.Component;
 
 /**
  * Handles injection of dependency management into the model.
  *
  * @author Benjamin Bentmann
  */
-@Component( role = DependencyManagementInjector.class )
+@SuppressWarnings( { "checkstyle:methodname" } )
+@Named
+@Singleton
 public class DefaultDependencyManagementInjector
     implements DependencyManagementInjector
 {
 
     private ManagementModelMerger merger = new ManagementModelMerger();
 
+    @Override
     public void injectManagement( Model model, ModelBuildingRequest request, ModelProblemCollector problems )
     {
         merger.mergeManagedDependencies( model );
     }
 
+    /**
+     * ManagementModelMerger
+     */
     protected static class ManagementModelMerger
         extends MavenModelMerger
     {
@@ -59,7 +67,7 @@ public class DefaultDependencyManagementInjector
             DependencyManagement dependencyManagement = model.getDependencyManagement();
             if ( dependencyManagement != null )
             {
-                Map<Object, Dependency> dependencies = new HashMap<Object, Dependency>();
+                Map<Object, Dependency> dependencies = new HashMap<>();
                 Map<Object, Object> context = Collections.emptyMap();
 
                 for ( Dependency dependency : model.getDependencies() )

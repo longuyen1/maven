@@ -32,7 +32,7 @@ import junit.framework.TestCase;
 
 /**
  * Tests {@link PluginDescriptorBuilder}.
- * 
+ *
  * @author Benjamin Bentmann
  */
 public class PluginDescriptorBuilderTest
@@ -108,6 +108,7 @@ public class PluginDescriptorBuilderTest
         assertEquals( "deprecated-parameter", mp.getDeprecated() );
         assertEquals( "${jar.finalName}", mp.getExpression() );
         assertEquals( "${project.build.finalName}", mp.getDefaultValue() );
+        assertEquals( "3.0.0", mp.getSince() );
 
         ComponentRequirement cr = md.getRequirements().get( 0 );
 

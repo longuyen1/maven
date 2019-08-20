@@ -19,7 +19,7 @@ specific language governing permissions and limitations
 under the License.
 -->
 
-<!-- 
+<!--
 
 Artifact handlers are required by the dependency resolution mechanism.
 
@@ -37,8 +37,8 @@ Artifact handlers are required by the dependency resolution mechanism.
       <configuration>
         <type>pom</type>
       </configuration>
-    </component>     
-    
+    </component>
+
     <!--
      | JAR
      |-->
@@ -52,9 +52,9 @@ Artifact handlers are required by the dependency resolution mechanism.
         <addedToClasspath>true</addedToClasspath>
       </configuration>
     </component>
-          
+
     <!--
-     | EJB 
+     | EJB
      |-->
     <component>
       <role>org.apache.maven.artifact.handler.ArtifactHandler</role>
@@ -80,17 +80,6 @@ Artifact handlers are required by the dependency resolution mechanism.
         <addedToClasspath>true</addedToClasspath>
       </configuration>
     </component>
-    <component>
-      <role>org.apache.maven.artifact.handler.ArtifactHandler</role>
-      <role-hint>ejb3</role-hint>
-      <implementation>org.apache.maven.artifact.handler.DefaultArtifactHandler</implementation>
-      <configuration>
-        <type>ejb3</type>
-        <includesDependencies>true</includesDependencies>
-        <language>java</language>
-        <addedToClasspath>false</addedToClasspath>
-      </configuration>
-    </component>   
 
     <!--
      | TEST JAR
@@ -141,7 +130,7 @@ Artifact handlers are required by the dependency resolution mechanism.
     </component>
 
     <!--
-     | JAVADOC JAR 
+     | JAVADOC JAR
      |-->
     <component>
       <role>org.apache.maven.artifact.handler.ArtifactHandler</role>
@@ -157,7 +146,7 @@ Artifact handlers are required by the dependency resolution mechanism.
     </component>
 
     <!--
-     | WAR 
+     | WAR
      |-->
     <component>
       <role>org.apache.maven.artifact.handler.ArtifactHandler</role>
@@ -172,7 +161,7 @@ Artifact handlers are required by the dependency resolution mechanism.
     </component>
 
     <!--
-     | EAR 
+     | EAR
      |-->
     <component>
       <role>org.apache.maven.artifact.handler.ArtifactHandler</role>
@@ -201,19 +190,5 @@ Artifact handlers are required by the dependency resolution mechanism.
       </configuration>
     </component>
 
-    <!--
-     | PAR
-     |-->
-    <component>
-      <role>org.apache.maven.artifact.handler.ArtifactHandler</role>
-      <role-hint>par</role-hint>
-      <implementation>org.apache.maven.artifact.handler.DefaultArtifactHandler</implementation>
-      <configuration>
-        <type>par</type>
-        <includesDependencies>true</includesDependencies>
-        <language>java</language>
-        <addedToClasspath>false</addedToClasspath>
-      </configuration>
-    </component>
   </components>
 </component-set>

@@ -21,11 +21,14 @@ package org.apache.maven.repository.legacy.resolver.conflict;
 
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.factory.ArtifactFactory;
+import org.apache.maven.artifact.repository.ArtifactRepository;
 import org.apache.maven.artifact.resolver.ResolutionNode;
 import org.apache.maven.artifact.versioning.InvalidVersionSpecificationException;
 import org.apache.maven.artifact.versioning.VersionRange;
 import org.apache.maven.repository.legacy.resolver.conflict.ConflictResolver;
 import org.codehaus.plexus.PlexusTestCase;
+
+import java.util.Collections;
 
 /**
  * Provides a basis for testing conflict resolvers.
@@ -36,11 +39,11 @@ public abstract class AbstractConflictResolverTest
     extends PlexusTestCase
 {
     // constants --------------------------------------------------------------
-    
+
     private static final String GROUP_ID = "test";
-    
+
     // fields -----------------------------------------------------------------
-    
+
     protected Artifact a1;
 
     protected Artifact a2;
@@ -48,21 +51,21 @@ public abstract class AbstractConflictResolverTest
     protected Artifact b1;
 
     private final String roleHint;
-    
+
     private ArtifactFactory artifactFactory;
 
     private ConflictResolver conflictResolver;
-    
+
     // constructors -----------------------------------------------------------
-    
+
     public AbstractConflictResolverTest( String roleHint )
         throws Exception
     {
         this.roleHint = roleHint;
     }
-    
+
     // TestCase methods -------------------------------------------------------
-    
+
     /*
      * @see junit.framework.TestCase#setUp()
      */
@@ -72,12 +75,12 @@ public abstract class AbstractConflictResolverTest
 
         artifactFactory = (ArtifactFactory) lookup( ArtifactFactory.ROLE );
         conflictResolver = (ConflictResolver) lookup( ConflictResolver.ROLE, roleHint );
-        
+
         a1 = createArtifact( "a", "1.0" );
         a2 = createArtifact( "a", "2.0" );
         b1 = createArtifact( "b", "1.0" );
     }
-    
+
     /*
      * @see org.codehaus.plexus.PlexusTestCase#tearDown()
      */
@@ -86,44 +89,31 @@ public abstract class AbstractConflictResolverTest
         a1 = null;
         a2 = null;
         b1 = null;
-        
+
         artifactFactory = null;
         conflictResolver = null;
-        
+
         super.tearDown();
     }
-    
+
     // protected methods ------------------------------------------------------
-    
+
     protected ConflictResolver getConflictResolver()
     {
         return conflictResolver;
     }
-    
+
     protected void assertResolveConflict( ResolutionNode expectedNode, ResolutionNode actualNode1, ResolutionNode actualNode2 )
     {
         ResolutionNode resolvedNode = getConflictResolver().resolveConflict( actualNode1, actualNode2 );
-        
+
         assertNotNull( "Expected resolvable", resolvedNode );
         assertEquals( "Resolution node", expectedNode, resolvedNode );
-    }
-
-    protected void assertUnresolvableConflict( ResolutionNode actualNode1, ResolutionNode actualNode2 )
-    {
-        ResolutionNode resolvedNode = getConflictResolver().resolveConflict( actualNode1, actualNode2 );
-        
-        assertNull( "Expected unresolvable", resolvedNode );
     }
 
     protected Artifact createArtifact( String id, String version ) throws InvalidVersionSpecificationException
     {
         return createArtifact( id, version, Artifact.SCOPE_COMPILE );
-    }
-
-    protected Artifact createArtifact( String id, String version, boolean optional )
-        throws InvalidVersionSpecificationException
-    {
-        return createArtifact( id, version, Artifact.SCOPE_COMPILE, null, optional );
     }
 
     protected Artifact createArtifact( String id, String version, String scope )
@@ -136,8 +126,18 @@ public abstract class AbstractConflictResolverTest
         throws InvalidVersionSpecificationException
     {
         VersionRange versionRange = VersionRange.createFromVersionSpec( version );
-        
+
         return artifactFactory.createDependencyArtifact( GROUP_ID, id, versionRange, "jar", null, scope,
                                                          inheritedScope, optional );
     }
+
+    protected ResolutionNode createResolutionNode( Artifact Artifact )
+    {
+        return new ResolutionNode( Artifact, Collections.<ArtifactRepository>emptyList() );
+    }
+    protected ResolutionNode createResolutionNode( Artifact Artifact, ResolutionNode parent )
+    {
+        return new ResolutionNode( Artifact, Collections.<ArtifactRepository>emptyList(), parent );
+    }
+
 }

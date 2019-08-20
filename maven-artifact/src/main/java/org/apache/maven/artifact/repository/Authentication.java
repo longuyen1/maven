@@ -19,6 +19,9 @@ package org.apache.maven.artifact.repository;
  * under the License.
  */
 
+/**
+ * Authentication
+ */
 public class Authentication
 {
 
@@ -44,7 +47,7 @@ public class Authentication
 
     /**
      * Get the user's password which is used when connecting to the repository.
-     * 
+     *
      * @return password of user
      */
     public String getPassword()
@@ -54,7 +57,7 @@ public class Authentication
 
     /**
      * Set the user's password which is used when connecting to the repository.
-     * 
+     *
      * @param password password of the user
      */
     public void setPassword( String password )
@@ -64,7 +67,7 @@ public class Authentication
 
     /**
      * Get the username used to access the repository.
-     * 
+     *
      * @return username at repository
      */
     public String getUsername()
@@ -74,7 +77,7 @@ public class Authentication
 
     /**
      * Set username used to access the repository.
-     * 
+     *
      * @param userName the username used to access repository
      */
     public void setUsername( final String userName )
@@ -85,7 +88,7 @@ public class Authentication
     /**
      * Get the passphrase of the private key file. The passphrase is used only when host/protocol supports
      * authentication via exchange of private/public keys and private key was used for authentication.
-     * 
+     *
      * @return passphrase of the private key file
      */
     public String getPassphrase()
@@ -95,7 +98,7 @@ public class Authentication
 
     /**
      * Set the passphrase of the private key file.
-     * 
+     *
      * @param passphrase passphrase of the private key file
      */
     public void setPassphrase( final String passphrase )
@@ -105,7 +108,7 @@ public class Authentication
 
     /**
      * Get the absolute path to the private key file.
-     * 
+     *
      * @return absolute path to private key
      */
     public String getPrivateKey()
@@ -115,7 +118,7 @@ public class Authentication
 
     /**
      * Set the absolute path to private key file.
-     * 
+     *
      * @param privateKey path to private key in local file system
      */
     public void setPrivateKey( final String privateKey )

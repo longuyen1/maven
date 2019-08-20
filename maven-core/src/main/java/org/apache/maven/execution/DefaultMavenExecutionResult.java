@@ -28,8 +28,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import org.apache.maven.project.DependencyResolutionResult;
 import org.apache.maven.project.MavenProject;
 
-import com.google.common.collect.Maps;
-
 /** @author Jason van Zyl */
 public class DefaultMavenExecutionResult
     implements MavenExecutionResult
@@ -40,9 +38,10 @@ public class DefaultMavenExecutionResult
 
     private DependencyResolutionResult dependencyResolutionResult;
 
-    private List<Throwable> exceptions = new CopyOnWriteArrayList<Throwable>();
+    private final List<Throwable> exceptions = new CopyOnWriteArrayList<>();
 
-    private Map<MavenProject, BuildSummary> buildSummaries = Maps.newIdentityHashMap();
+    private final Map<MavenProject, BuildSummary> buildSummaries =
+        Collections.synchronizedMap( new IdentityHashMap<MavenProject, BuildSummary>() );
 
     public MavenExecutionResult setProject( MavenProject project )
     {
@@ -65,8 +64,10 @@ public class DefaultMavenExecutionResult
 
     public List<MavenProject> getTopologicallySortedProjects()
     {
-        return null == topologicallySortedProjects ? Collections.<MavenProject> emptyList()
-                        : topologicallySortedProjects;
+        return null == topologicallySortedProjects
+                   ? Collections.<MavenProject>emptyList()
+                   : Collections.unmodifiableList( topologicallySortedProjects );
+
     }
 
     public DependencyResolutionResult getDependencyResolutionResult()
@@ -83,7 +84,7 @@ public class DefaultMavenExecutionResult
 
     public List<Throwable> getExceptions()
     {
-        return exceptions == null ? Collections.<Throwable> emptyList() : exceptions;
+        return exceptions;
     }
 
     public MavenExecutionResult addException( Throwable t )
@@ -100,15 +101,11 @@ public class DefaultMavenExecutionResult
 
     public BuildSummary getBuildSummary( MavenProject project )
     {
-        return ( buildSummaries != null ) ? buildSummaries.get( project ) : null;
+        return buildSummaries.get( project );
     }
 
     public void addBuildSummary( BuildSummary summary )
     {
-        if ( buildSummaries == null )
-        {
-            buildSummaries = new IdentityHashMap<MavenProject, BuildSummary>();
-        }
         buildSummaries.put( summary.getProject(), summary );
     }
 }

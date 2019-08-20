@@ -53,7 +53,7 @@ public class VersionRangeTest
         throws InvalidVersionSpecificationException, OverConstrainedVersionException
     {
         Artifact artifact = null;
-        
+
         VersionRange range = VersionRange.createFromVersionSpec( "(,1.0]" );
         List<Restriction> restrictions = range.getRestrictions();
         assertEquals( CHECK_NUM_RESTRICTIONS, 1, restrictions.size() );
@@ -178,7 +178,7 @@ public class VersionRangeTest
         VersionRange range1 = VersionRange.createFromVersionSpec( "1.0" );
         VersionRange range2 = VersionRange.createFromVersionSpec( "1.1" );
         VersionRange mergedRange = range1.restrict( range2 );
-        // TODO: current policy is to retain the original version - is this correct, do we need strategies or is that handled elsewhere?
+        // TODO current policy is to retain the original version - is this correct, do we need strategies or is that handled elsewhere?
 //        assertEquals( CHECK_VERSION_RECOMMENDATION, "1.1", mergedRange.getRecommendedVersion().toString() );
         assertEquals( CHECK_VERSION_RECOMMENDATION, "1.0", mergedRange.getRecommendedVersion().toString() );
         List<Restriction> restrictions = mergedRange.getRestrictions();
@@ -199,7 +199,7 @@ public class VersionRangeTest
         assertNull( CHECK_UPPER_BOUND, restriction.getUpperBound() );
         assertFalse( CHECK_UPPER_BOUND_INCLUSIVE, restriction.isUpperBoundInclusive() );
 
-        // TODO: test reversed restrictions on all below
+        // TODO test reversed restrictions on all below
         range1 = VersionRange.createFromVersionSpec( "[1.0,)" );
         range2 = VersionRange.createFromVersionSpec( "1.1" );
         mergedRange = range1.restrict( range2 );
@@ -726,5 +726,24 @@ public class VersionRangeTest
     public void testOrder0()
     {
         // assertTrue( new DefaultArtifactVersion( "1.0-alpha10" ).compareTo( new DefaultArtifactVersion( "1.0-alpha1" ) ) > 0 );
+    }
+
+    public void testCache()
+        throws InvalidVersionSpecificationException
+    {
+        VersionRange range = VersionRange.createFromVersionSpec( "[1.0,1.2]" );
+        assertSame( range, VersionRange.createFromVersionSpec( "[1.0,1.2]" ) ); // same instance from spec cache
+
+        VersionRange spec = VersionRange.createFromVersionSpec( "1.0" );
+        assertSame( spec, VersionRange.createFromVersionSpec( "1.0" ) ); // same instance from spec cache
+        List<Restriction> restrictions = spec.getRestrictions();
+        assertEquals( CHECK_NUM_RESTRICTIONS, 1, restrictions.size() );
+
+        VersionRange version = VersionRange.createFromVersion( "1.0" );
+        assertSame( version, VersionRange.createFromVersion( "1.0" ) ); // same instance from version cache
+        restrictions = version.getRestrictions();
+        assertEquals( CHECK_NUM_RESTRICTIONS, 0, restrictions.size() );
+
+        assertFalse( "check !VersionRange.createFromVersionSpec(x).equals(VersionRange.createFromVersion(x))", spec.equals( version ) );
     }
 }

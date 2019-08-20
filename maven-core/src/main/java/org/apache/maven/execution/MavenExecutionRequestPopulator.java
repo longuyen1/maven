@@ -20,36 +20,55 @@ package org.apache.maven.execution;
  */
 
 import org.apache.maven.settings.Settings;
+import org.apache.maven.toolchain.model.PersistedToolchains;
 
 /**
  * Assists in populating an execution request for invocation of Maven.
- * 
+ *
  * @author Benjamin Bentmann
  */
 public interface MavenExecutionRequestPopulator
 {
-
     /**
-     * Copies the values from the given settings into the specified execution request. This method will replace any
-     * existing values in the execution request that are controlled by the settings. Hence, it is expected that this
+     * Copies the values from the given toolchains into the specified execution request. This method will replace any
+     * existing values in the execution request that are controlled by the toolchains. Hence, it is expected that this
      * method is called on a new/empty execution request before the caller mutates it to fit its needs.
-     * 
+     *
      * @param request The execution request to populate, must not be {@code null}.
-     * @param settings The settings to copy into the execution request, may be {@code null}.
+     * @param toolchains The toolchains to copy into the execution request, may be {@code null}.
      * @return The populated execution request, never {@code null}.
      * @throws MavenExecutionRequestPopulationException If the execution request could not be populated.
+     * @since 3.3.0
      */
-    MavenExecutionRequest populateFromSettings( MavenExecutionRequest request, Settings settings )
+    MavenExecutionRequest populateFromToolchains( MavenExecutionRequest request, PersistedToolchains toolchains )
         throws MavenExecutionRequestPopulationException;
 
     /**
      * Injects default values like plugin groups or repositories into the specified execution request.
-     * 
+     *
      * @param request The execution request to populate, must not be {@code null}.
      * @return The populated execution request, never {@code null}.
      * @throws MavenExecutionRequestPopulationException If the execution request could not be populated.
      */
     MavenExecutionRequest populateDefaults( MavenExecutionRequest request )
         throws MavenExecutionRequestPopulationException;
+
+    /*if_not[MAVEN4]*/
+    
+    /**
+     * Copies the values from the given settings into the specified execution request. This method will replace any
+     * existing values in the execution request that are controlled by the settings. Hence, it is expected that this
+     * method is called on a new/empty execution request before the caller mutates it to fit its needs.
+     *
+     * @param request The execution request to populate, must not be {@code null}.
+     * @param settings The settings to copy into the execution request, may be {@code null}.
+     * @return The populated execution request, never {@code null}.
+     * @throws MavenExecutionRequestPopulationException If the execution request could not be populated.
+     */
+    @Deprecated
+    MavenExecutionRequest populateFromSettings( MavenExecutionRequest request, Settings settings )
+        throws MavenExecutionRequestPopulationException;
+
+    /*end[MAVEN4]*/
 
 }

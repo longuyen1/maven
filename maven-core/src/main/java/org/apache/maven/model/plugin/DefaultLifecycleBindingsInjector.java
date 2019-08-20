@@ -44,7 +44,7 @@ import org.codehaus.plexus.component.annotations.Requirement;
 
 /**
  * Handles injection of plugin executions induced by the lifecycle bindings for a packaging.
- * 
+ *
  * @author Benjamin Bentmann
  */
 @Component( role = LifecycleBindingsInjector.class )
@@ -79,6 +79,9 @@ public class DefaultLifecycleBindingsInjector
         }
     }
 
+    /**
+     *  The domain-specific model merger for lifecycle bindings
+     */
     protected static class LifecycleBindingsMerger
         extends MavenModelMerger
     {
@@ -93,11 +96,12 @@ public class DefaultLifecycleBindingsInjector
             }
 
             Map<Object, Object> context =
-                Collections.<Object, Object> singletonMap( PLUGIN_MANAGEMENT, target.getBuild().getPluginManagement() );
+                Collections.<Object, Object>singletonMap( PLUGIN_MANAGEMENT, target.getBuild().getPluginManagement() );
 
             mergePluginContainer_Plugins( target.getBuild(), source.getBuild(), false, context );
         }
 
+        @SuppressWarnings( { "checkstyle:methodname" } )
         @Override
         protected void mergePluginContainer_Plugins( PluginContainer target, PluginContainer source,
                                                      boolean sourceDominant, Map<Object, Object> context )
@@ -107,7 +111,7 @@ public class DefaultLifecycleBindingsInjector
             {
                 List<Plugin> tgt = target.getPlugins();
 
-                Map<Object, Plugin> merged = new LinkedHashMap<Object, Plugin>( ( src.size() + tgt.size() ) * 2 );
+                Map<Object, Plugin> merged = new LinkedHashMap<>( ( src.size() + tgt.size() ) * 2 );
 
                 for ( Plugin element : tgt )
                 {
@@ -115,7 +119,7 @@ public class DefaultLifecycleBindingsInjector
                     merged.put( key, element );
                 }
 
-                Map<Object, Plugin> unmanaged = new LinkedHashMap<Object, Plugin>();
+                Map<Object, Plugin> added = new LinkedHashMap<>();
 
                 for ( Plugin element : src )
                 {
@@ -128,11 +132,11 @@ public class DefaultLifecycleBindingsInjector
                     else
                     {
                         merged.put( key, element );
-                        unmanaged.put( key, element );
+                        added.put( key, element );
                     }
                 }
 
-                if ( !unmanaged.isEmpty() )
+                if ( !added.isEmpty() )
                 {
                     PluginManagement pluginMgmt = (PluginManagement) context.get( PLUGIN_MANAGEMENT );
                     if ( pluginMgmt != null )
@@ -140,18 +144,18 @@ public class DefaultLifecycleBindingsInjector
                         for ( Plugin managedPlugin : pluginMgmt.getPlugins() )
                         {
                             Object key = getPluginKey( managedPlugin );
-                            Plugin unmanagedPlugin = unmanaged.get( key );
-                            if ( unmanagedPlugin != null )
+                            Plugin addedPlugin = added.get( key );
+                            if ( addedPlugin != null )
                             {
                                 Plugin plugin = managedPlugin.clone();
-                                mergePlugin( plugin, unmanagedPlugin, sourceDominant, Collections.emptyMap() );
+                                mergePlugin( plugin, addedPlugin, sourceDominant, Collections.emptyMap() );
                                 merged.put( key, plugin );
                             }
                         }
                     }
                 }
 
-                List<Plugin> result = new ArrayList<Plugin>( merged.values() );
+                List<Plugin> result = new ArrayList<>( merged.values() );
 
                 target.setPlugins( result );
             }

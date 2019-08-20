@@ -44,10 +44,13 @@ public interface RepositorySystem
 {
     String DEFAULT_LOCAL_REPO_ID = "local";
 
+    @SuppressWarnings( "checkstyle:constantname" )
     String userHome = System.getProperty( "user.home" );
 
+    @SuppressWarnings( "checkstyle:constantname" )
     File userMavenConfigurationHome = new File( userHome, ".m2" );
 
+    @SuppressWarnings( "checkstyle:constantname" )
     File defaultUserLocalRepository = new File( userMavenConfigurationHome, "repository" );
 
     String DEFAULT_REMOTE_REPO_ID = "central";
@@ -80,7 +83,8 @@ public interface RepositorySystem
         throws InvalidRepositoryException;
 
     ArtifactRepository createArtifactRepository( String id, String url, ArtifactRepositoryLayout repositoryLayout,
-                                                 ArtifactRepositoryPolicy snapshots, ArtifactRepositoryPolicy releases );
+                                                 ArtifactRepositoryPolicy snapshots,
+                                                 ArtifactRepositoryPolicy releases );
 
     /**
      * Calculates the effective repositories for the given input repositories which are assumed to be already mirrored
@@ -140,7 +144,7 @@ public interface RepositorySystem
     void injectProxy( RepositorySystemSession session, List<ArtifactRepository> repositories );
 
     void injectAuthentication( RepositorySystemSession session, List<ArtifactRepository> repositories );
-    
+
     ArtifactResolutionResult resolve( ArtifactResolutionRequest request );
 
     // Install

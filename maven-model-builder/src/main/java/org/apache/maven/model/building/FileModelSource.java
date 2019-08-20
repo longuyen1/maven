@@ -20,67 +20,46 @@ package org.apache.maven.model.building;
  */
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
 import java.net.URI;
+
+import org.apache.maven.building.FileSource;
 
 /**
  * Wraps an ordinary {@link File} as a model source.
- * 
+ *
  * @author Benjamin Bentmann
  */
-public class FileModelSource
-    implements ModelSource2
+public class FileModelSource extends FileSource implements ModelSource2
 {
-    private final File pomFile;
 
     /**
      * Creates a new model source backed by the specified file.
-     * 
+     *
      * @param pomFile The POM file, must not be {@code null}.
      */
     public FileModelSource( File pomFile )
     {
-        if ( pomFile == null )
-        {
-            throw new IllegalArgumentException( "no POM file specified" );
-        }
-        this.pomFile = pomFile.getAbsoluteFile();
+        super( pomFile );
     }
-
-    public InputStream getInputStream()
-        throws IOException
-    {
-        return new FileInputStream( pomFile );
-    }
-
-    public String getLocation()
-    {
-        return pomFile.getPath();
-    }
-
+    
     /**
-     * Gets the POM file of this model source.
      * 
-     * @return The underlying POM file, never {@code null}.
+     * @return the file of this source
+     * 
+     * @deprecated instead use {@link #getFile()}
      */
+    @Deprecated
     public File getPomFile()
     {
-        return pomFile;
+        return getFile();
     }
-
+    
     @Override
-    public String toString()
-    {
-        return getLocation();
-    }
-
     public ModelSource2 getRelatedSource( String relPath )
     {
         relPath = relPath.replace( '\\', File.separatorChar ).replace( '/', File.separatorChar );
 
-        File relatedPom = new File( pomFile.getParentFile(), relPath );
+        File relatedPom = new File( getFile().getParentFile(), relPath );
 
         if ( relatedPom.isDirectory() )
         {
@@ -96,8 +75,32 @@ public class FileModelSource
         return null;
     }
 
+    @Override
     public URI getLocationURI()
     {
-        return pomFile.toURI();
+        return getFile().toURI();
     }
+
+    @Override
+    public boolean equals( Object obj ) 
+    {
+        if ( this == obj ) 
+        {
+            return true;
+        }
+        
+        if ( !( obj instanceof FileModelSource ) ) 
+        {
+            return false;
+        }
+        FileModelSource other = ( FileModelSource ) obj;
+        return getFile().equals( other.getFile() );
+    }
+
+    @Override
+    public int hashCode() 
+    {
+        return getFile().hashCode(); 
+    }
+
 }

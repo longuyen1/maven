@@ -20,6 +20,7 @@ package org.apache.maven.project;
  */
 
 import java.util.List;
+import java.util.Objects;
 
 import org.apache.maven.artifact.repository.ArtifactRepository;
 import org.apache.maven.model.Model;
@@ -28,15 +29,16 @@ import org.apache.maven.model.building.ModelBuildingEvent;
 import org.apache.maven.model.building.ModelProblem.Severity;
 import org.apache.maven.model.building.ModelProblem.Version;
 import org.apache.maven.model.building.ModelProblemCollectorRequest;
+import org.apache.maven.plugin.PluginManagerException;
 import org.apache.maven.plugin.PluginResolutionException;
 import org.apache.maven.plugin.version.PluginVersionResolutionException;
 
 /**
  * Processes events from the model builder while building the effective model for a {@link MavenProject} instance.
- * 
+ *
  * @author Benjamin Bentmann
  */
-class DefaultModelBuildingListener
+public class DefaultModelBuildingListener
     extends AbstractModelBuildingListener
 {
 
@@ -53,30 +55,18 @@ class DefaultModelBuildingListener
     public DefaultModelBuildingListener( MavenProject project, ProjectBuildingHelper projectBuildingHelper,
                                          ProjectBuildingRequest projectBuildingRequest )
     {
-        if ( project == null )
-        {
-            throw new IllegalArgumentException( "project missing" );
-        }
-        this.project = project;
-
-        if ( projectBuildingHelper == null )
-        {
-            throw new IllegalArgumentException( "project building helper missing" );
-        }
-        this.projectBuildingHelper = projectBuildingHelper;
-
-        if ( projectBuildingRequest == null )
-        {
-            throw new IllegalArgumentException( "project building request missing" );
-        }
-        this.projectBuildingRequest = projectBuildingRequest;
+        this.project = Objects.requireNonNull( project, "project cannot be null" );
+        this.projectBuildingHelper =
+            Objects.requireNonNull( projectBuildingHelper, "projectBuildingHelper cannot be null" );
+        this.projectBuildingRequest =
+            Objects.requireNonNull( projectBuildingRequest, "projectBuildingRequest cannot be null" );
         this.remoteRepositories = projectBuildingRequest.getRemoteRepositories();
         this.pluginRepositories = projectBuildingRequest.getPluginArtifactRepositories();
     }
 
     /**
      * Gets the project whose model is being built.
-     * 
+     *
      * @return The project, never {@code null}.
      */
     public MavenProject getProject()
@@ -110,16 +100,10 @@ class DefaultModelBuildingListener
                 ProjectRealmCache.CacheRecord record =
                     projectBuildingHelper.createProjectRealm( project, model, projectBuildingRequest );
 
-                project.setClassRealm( record.realm );
-                project.setExtensionDependencyFilter( record.extensionArtifactFilter );
+                project.setClassRealm( record.getRealm() );
+                project.setExtensionDependencyFilter( record.getExtensionArtifactFilter() );
             }
-            catch ( PluginResolutionException e )
-            {
-                event.getProblems().add( new ModelProblemCollectorRequest( Severity.ERROR, Version.BASE )
-                        .setMessage( "Unresolveable build extension: " + e.getMessage() )
-                        .setException( e ) );
-            }
-            catch ( PluginVersionResolutionException e )
+            catch ( PluginResolutionException | PluginManagerException | PluginVersionResolutionException e )
             {
                 event.getProblems().add( new ModelProblemCollectorRequest( Severity.ERROR, Version.BASE )
                         .setMessage( "Unresolveable build extension: " + e.getMessage() )

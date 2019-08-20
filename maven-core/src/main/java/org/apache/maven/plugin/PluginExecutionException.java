@@ -23,6 +23,9 @@ import org.apache.maven.project.DuplicateArtifactAttachmentException;
 import org.apache.maven.project.MavenProject;
 import org.codehaus.plexus.util.StringUtils;
 
+/**
+ * Exception in the plugin manager.
+ */
 public class PluginExecutionException
     extends PluginManagerException
 {
@@ -35,7 +38,8 @@ public class PluginExecutionException
         this.mojoExecution = mojoExecution;
     }
 
-    public PluginExecutionException( MojoExecution mojoExecution, MavenProject project, String message, Throwable cause )
+    public PluginExecutionException( MojoExecution mojoExecution, MavenProject project, String message,
+                                     Throwable cause )
     {
         super( mojoExecution.getMojoDescriptor(), project, message, cause );
         this.mojoExecution = mojoExecution;

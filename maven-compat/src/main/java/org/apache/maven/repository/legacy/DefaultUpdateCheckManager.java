@@ -19,18 +19,6 @@ package org.apache.maven.repository.legacy;
  * under the License.
  */
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.RandomAccessFile;
-import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
-import java.nio.channels.FileLock;
-import java.util.Date;
-import java.util.Properties;
-
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.repository.ArtifactRepository;
 import org.apache.maven.artifact.repository.ArtifactRepositoryPolicy;
@@ -40,8 +28,20 @@ import org.apache.maven.repository.Proxy;
 import org.codehaus.plexus.component.annotations.Component;
 import org.codehaus.plexus.logging.AbstractLogEnabled;
 import org.codehaus.plexus.logging.Logger;
-import org.codehaus.plexus.util.IOUtil;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.RandomAccessFile;
+import java.nio.channels.Channels;
+import java.nio.channels.FileChannel;
+import java.nio.channels.FileLock;
+import java.util.Date;
+import java.util.Properties;
+
+/**
+ * DefaultUpdateCheckManager
+ */
 @Component( role = UpdateCheckManager.class )
 public class DefaultUpdateCheckManager
     extends AbstractLogEnabled
@@ -75,8 +75,8 @@ public class DefaultUpdateCheckManager
             if ( getLogger().isDebugEnabled() )
             {
                 getLogger().debug(
-                                   "Skipping update check for " + artifact + " (" + file + ") from "
-                                       + repository.getId() + " (" + repository.getUrl() + ")" );
+                    "Skipping update check for " + artifact + " (" + file + ") from " + repository.getId() + " ("
+                        + repository.getUrl() + ")" );
             }
 
             return false;
@@ -85,8 +85,8 @@ public class DefaultUpdateCheckManager
         if ( getLogger().isDebugEnabled() )
         {
             getLogger().debug(
-                               "Determining update check for " + artifact + " (" + file + ") from "
-                                   + repository.getId() + " (" + repository.getUrl() + ")" );
+                "Determining update check for " + artifact + " (" + file + ") from " + repository.getId() + " ("
+                    + repository.getUrl() + ")" );
         }
 
         if ( file == null )
@@ -99,7 +99,7 @@ public class DefaultUpdateCheckManager
 
         if ( file.exists() )
         {
-            lastCheckDate = new Date ( file.lastModified() );
+            lastCheckDate = new Date( file.lastModified() );
         }
         else
         {
@@ -125,8 +125,8 @@ public class DefaultUpdateCheckManager
             if ( getLogger().isDebugEnabled() )
             {
                 getLogger().debug(
-                                   "Skipping update check for " + metadata.getKey() + " (" + file + ") from "
-                                       + repository.getId() + " (" + repository.getUrl() + ")" );
+                    "Skipping update check for " + metadata.getKey() + " (" + file + ") from " + repository.getId()
+                        + " (" + repository.getUrl() + ")" );
             }
 
             return false;
@@ -135,8 +135,8 @@ public class DefaultUpdateCheckManager
         if ( getLogger().isDebugEnabled() )
         {
             getLogger().debug(
-                               "Determining update check for " + metadata.getKey() + " (" + file + ") from "
-                                   + repository.getId() + " (" + repository.getUrl() + ")" );
+                "Determining update check for " + metadata.getKey() + " (" + file + ") from " + repository.getId()
+                    + " (" + repository.getUrl() + ")" );
         }
 
         if ( file == null )
@@ -242,18 +242,12 @@ public class DefaultUpdateCheckManager
                 Properties props = new Properties();
 
                 channel = new RandomAccessFile( touchfile, "rw" ).getChannel();
-                lock = channel.lock( 0, channel.size(), false );
+                lock = channel.lock();
 
                 if ( touchfile.canRead() )
                 {
                     getLogger().debug( "Reading resolution-state from: " + touchfile );
-                    ByteBuffer buffer = ByteBuffer.allocate( (int) channel.size() );
-
-                    channel.read( buffer );
-                    buffer.flip();
-
-                    ByteArrayInputStream stream = new ByteArrayInputStream( buffer.array() );
-                    props.load( stream );
+                    props.load( Channels.newInputStream( channel ) );
                 }
 
                 props.setProperty( key, Long.toString( System.currentTimeMillis() ) );
@@ -267,23 +261,21 @@ public class DefaultUpdateCheckManager
                     props.remove( key + ERROR_KEY_SUFFIX );
                 }
 
-                ByteArrayOutputStream stream = new ByteArrayOutputStream();
-
                 getLogger().debug( "Writing resolution-state to: " + touchfile );
-                props.store( stream, "Last modified on: " + new Date() );
+                channel.truncate( 0 );
+                props.store( Channels.newOutputStream( channel ), "Last modified on: " + new Date() );
 
-                byte[] data = stream.toByteArray();
-                ByteBuffer buffer = ByteBuffer.allocate( data.length );
-                buffer.put( data );
-                buffer.flip();
+                lock.release();
+                lock = null;
 
-                channel.position( 0 );
-                channel.write( buffer );
+                channel.close();
+                channel = null;
             }
             catch ( IOException e )
             {
-                getLogger().debug( "Failed to record lastUpdated information for resolution.\nFile: "
-                                       + touchfile.toString() + "; key: " + key, e );
+                getLogger().debug(
+                    "Failed to record lastUpdated information for resolution.\nFile: " + touchfile.toString()
+                        + "; key: " + key, e );
             }
             finally
             {
@@ -295,8 +287,8 @@ public class DefaultUpdateCheckManager
                     }
                     catch ( IOException e )
                     {
-                        getLogger().debug( "Error releasing exclusive lock for resolution tracking file: "
-                                               + touchfile, e );
+                        getLogger().debug( "Error releasing exclusive lock for resolution tracking file: " + touchfile,
+                                           e );
                     }
                 }
 
@@ -308,8 +300,7 @@ public class DefaultUpdateCheckManager
                     }
                     catch ( IOException e )
                     {
-                        getLogger().debug( "Error closing FileChannel for resolution tracking file: "
-                                               + touchfile, e );
+                        getLogger().debug( "Error closing FileChannel for resolution tracking file: " + touchfile, e );
                     }
                 }
             }
@@ -359,27 +350,26 @@ public class DefaultUpdateCheckManager
 
         synchronized ( touchfile.getAbsolutePath().intern() )
         {
+            FileInputStream in = null;
             FileLock lock = null;
-            FileChannel channel = null;
+
             try
             {
                 Properties props = new Properties();
 
-                FileInputStream stream = new FileInputStream( touchfile );
-                try
-                {
-                    channel = stream.getChannel();
-                    lock = channel.lock( 0, channel.size(), true );
+                in = new FileInputStream( touchfile );
+                lock = in.getChannel().lock( 0, Long.MAX_VALUE, true );
 
-                    getLogger().debug( "Reading resolution-state from: " + touchfile );
-                    props.load( stream );
+                getLogger().debug( "Reading resolution-state from: " + touchfile );
+                props.load( in );
 
-                    return props;
-                }
-                finally
-                {
-                    IOUtil.close( stream );
-                }
+                lock.release();
+                lock = null;
+
+                in.close();
+                in = null;
+
+                return props;
             }
             catch ( IOException e )
             {
@@ -402,11 +392,11 @@ public class DefaultUpdateCheckManager
                     }
                 }
 
-                if ( channel != null )
+                if ( in != null )
                 {
                     try
                     {
-                        channel.close();
+                        in.close();
                     }
                     catch ( IOException e )
                     {

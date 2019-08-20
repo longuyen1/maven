@@ -28,7 +28,7 @@ import org.apache.maven.settings.building.SettingsProblem;
 
 /**
  * Collects the output of the settings decrypter.
- * 
+ *
  * @author Benjamin Bentmann
  */
 class DefaultSettingsDecryptionResult
@@ -41,33 +41,38 @@ class DefaultSettingsDecryptionResult
 
     private List<SettingsProblem> problems;
 
-    public DefaultSettingsDecryptionResult( List<Server> servers, List<Proxy> proxies, List<SettingsProblem> problems )
+    DefaultSettingsDecryptionResult( List<Server> servers, List<Proxy> proxies, List<SettingsProblem> problems )
     {
         this.servers = ( servers != null ) ? servers : new ArrayList<Server>();
         this.proxies = ( proxies != null ) ? proxies : new ArrayList<Proxy>();
         this.problems = ( problems != null ) ? problems : new ArrayList<SettingsProblem>();
     }
 
+    @Override
     public Server getServer()
     {
         return servers.isEmpty() ? null : servers.get( 0 );
     }
 
+    @Override
     public List<Server> getServers()
     {
         return servers;
     }
 
+    @Override
     public Proxy getProxy()
     {
         return proxies.isEmpty() ? null : proxies.get( 0 );
     }
 
+    @Override
     public List<Proxy> getProxies()
     {
         return proxies;
     }
 
+    @Override
     public List<SettingsProblem> getProblems()
     {
         return problems;

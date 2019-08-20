@@ -21,6 +21,7 @@ package org.apache.maven.project;
 
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.maven.RepositoryUtils;
@@ -28,8 +29,6 @@ import org.apache.maven.artifact.Artifact;
 import org.apache.maven.model.Dependency;
 import org.apache.maven.model.DependencyManagement;
 import org.apache.maven.model.Exclusion;
-import org.apache.maven.model.InputLocation;
-import org.apache.maven.model.InputSource;
 import org.codehaus.plexus.component.annotations.Component;
 import org.codehaus.plexus.component.annotations.Requirement;
 import org.codehaus.plexus.logging.Logger;
@@ -38,7 +37,6 @@ import org.eclipse.aether.DefaultRepositorySystemSession;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.RequestTrace;
-import org.eclipse.aether.artifact.ArtifactProperties;
 import org.eclipse.aether.artifact.ArtifactType;
 import org.eclipse.aether.artifact.ArtifactTypeRegistry;
 import org.eclipse.aether.collection.CollectRequest;
@@ -66,15 +64,21 @@ public class DefaultProjectDependenciesResolver
     @Requirement
     private RepositorySystem repoSystem;
 
+    @Requirement
+    private List<RepositorySessionDecorator> decorators;
+
     public DependencyResolutionResult resolve( DependencyResolutionRequest request )
         throws DependencyResolutionException
     {
-        RequestTrace trace = RequestTrace.newChild( null, request );
+        final RequestTrace trace = RequestTrace.newChild( null, request );
 
-        DefaultDependencyResolutionResult result = new DefaultDependencyResolutionResult();
+        final DefaultDependencyResolutionResult result = new DefaultDependencyResolutionResult();
 
-        MavenProject project = request.getMavenProject();
+        final MavenProject project = request.getMavenProject();
+        final DependencyFilter filter = request.getResolutionFilter();
         RepositorySystemSession session = request.getRepositorySession();
+        ArtifactTypeRegistry stereotypes = session.getArtifactTypeRegistry();
+
         if ( logger.isDebugEnabled()
             && session.getConfigProperties().get( DependencyManagerUtils.CONFIG_PROP_VERBOSE ) == null )
         {
@@ -82,9 +86,15 @@ public class DefaultProjectDependenciesResolver
             verbose.setConfigProperty( DependencyManagerUtils.CONFIG_PROP_VERBOSE, Boolean.TRUE );
             session = verbose;
         }
-        DependencyFilter filter = request.getResolutionFilter();
 
-        ArtifactTypeRegistry stereotypes = session.getArtifactTypeRegistry();
+        for ( RepositorySessionDecorator decorator : decorators )
+        {
+            RepositorySystemSession decorated = decorator.decorate( project, session );
+            if ( decorated != null )
+            {
+                session = decorated;
+            }
+        }
 
         CollectRequest collect = new CollectRequest();
         collect.setRootArtifact( RepositoryUtils.toArtifact( project.getArtifact() ) );
@@ -106,7 +116,7 @@ public class DefaultProjectDependenciesResolver
         }
         else
         {
-            Map<String, Dependency> dependencies = new HashMap<String, Dependency>();
+            Map<String, Dependency> dependencies = new HashMap<>();
             for ( Dependency dependency : project.getDependencies() )
             {
                 String classifier = dependency.getClassifier();
@@ -140,10 +150,10 @@ public class DefaultProjectDependenciesResolver
             }
         }
 
-        DependencyManagement depMngt = project.getDependencyManagement();
-        if ( depMngt != null )
+        DependencyManagement depMgmt = project.getDependencyManagement();
+        if ( depMgmt != null )
         {
-            for ( Dependency dependency : depMngt.getDependencies() )
+            for ( Dependency dependency : depMgmt.getDependencies() )
             {
                 collect.addManagedDependency( RepositoryUtils.toDependency( dependency, stereotypes ) );
             }
@@ -218,6 +228,7 @@ public class DefaultProjectDependenciesResolver
         }
     }
 
+    // Keep this class in sync with org.apache.maven.plugin.internal.DefaultPluginDependenciesResolver.GraphLogger
     class GraphLogger
         implements DependencyVisitor
     {
@@ -226,9 +237,7 @@ public class DefaultProjectDependenciesResolver
 
         private String indent = "";
 
-        private Map<String, Dependency> managed;
-
-        public GraphLogger( MavenProject project )
+        GraphLogger( MavenProject project )
         {
             this.project = project;
         }
@@ -243,22 +252,63 @@ public class DefaultProjectDependenciesResolver
                 org.eclipse.aether.artifact.Artifact art = dep.getArtifact();
 
                 buffer.append( art );
-                buffer.append( ':' ).append( dep.getScope() );
-
-                String premanagedScope = DependencyManagerUtils.getPremanagedScope( node );
-                if ( premanagedScope != null && !premanagedScope.equals( dep.getScope() ) )
+                if ( StringUtils.isNotEmpty( dep.getScope() ) )
                 {
-                    buffer.append( " (scope managed from " ).append( premanagedScope );
-                    appendManagementSource( buffer, art, "scope" );
-                    buffer.append( ")" );
+                    buffer.append( ':' ).append( dep.getScope() );
                 }
 
-                String premanagedVersion = DependencyManagerUtils.getPremanagedVersion( node );
-                if ( premanagedVersion != null && !premanagedVersion.equals( art.getVersion() ) )
+                if ( dep.isOptional() )
                 {
-                    buffer.append( " (version managed from " ).append( premanagedVersion );
-                    appendManagementSource( buffer, art, "version" );
-                    buffer.append( ")" );
+                    buffer.append( " (optional)" );
+                }
+
+                // TODO We currently cannot tell which <dependencyManagement> section contained the management
+                //      information. When the resolver provides this information, these log messages should be updated
+                //      to contain it.
+                if ( ( node.getManagedBits() & DependencyNode.MANAGED_SCOPE ) == DependencyNode.MANAGED_SCOPE )
+                {
+                    final String premanagedScope = DependencyManagerUtils.getPremanagedScope( node );
+                    buffer.append( " (scope managed from " );
+                    buffer.append( StringUtils.defaultString( premanagedScope, "default" ) );
+                    buffer.append( ')' );
+                }
+
+                if ( ( node.getManagedBits() & DependencyNode.MANAGED_VERSION ) == DependencyNode.MANAGED_VERSION )
+                {
+                    final String premanagedVersion = DependencyManagerUtils.getPremanagedVersion( node );
+                    buffer.append( " (version managed from " );
+                    buffer.append( StringUtils.defaultString( premanagedVersion, "default" ) );
+                    buffer.append( ')' );
+                }
+
+                if ( ( node.getManagedBits() & DependencyNode.MANAGED_OPTIONAL ) == DependencyNode.MANAGED_OPTIONAL )
+                {
+                    final Boolean premanagedOptional = DependencyManagerUtils.getPremanagedOptional( node );
+                    buffer.append( " (optionality managed from " );
+                    buffer.append( StringUtils.defaultString( premanagedOptional, "default" ) );
+                    buffer.append( ')' );
+                }
+
+                if ( ( node.getManagedBits() & DependencyNode.MANAGED_EXCLUSIONS )
+                         == DependencyNode.MANAGED_EXCLUSIONS )
+                {
+                    final Collection<org.eclipse.aether.graph.Exclusion> premanagedExclusions =
+                        DependencyManagerUtils.getPremanagedExclusions( node );
+
+                    buffer.append( " (exclusions managed from " );
+                    buffer.append( StringUtils.defaultString( premanagedExclusions, "default" ) );
+                    buffer.append( ')' );
+                }
+
+                if ( ( node.getManagedBits() & DependencyNode.MANAGED_PROPERTIES )
+                         == DependencyNode.MANAGED_PROPERTIES )
+                {
+                    final Map<String, String> premanagedProperties =
+                        DependencyManagerUtils.getPremanagedProperties( node );
+
+                    buffer.append( " (properties managed from " );
+                    buffer.append( StringUtils.defaultString( premanagedProperties, "default" ) );
+                    buffer.append( ')' );
                 }
             }
             else
@@ -278,41 +328,6 @@ public class DefaultProjectDependenciesResolver
         {
             indent = indent.substring( 0, indent.length() - 3 );
             return true;
-        }
-
-        private void appendManagementSource( StringBuilder buffer, org.eclipse.aether.artifact.Artifact artifact,
-                                             String field )
-        {
-            if ( managed == null )
-            {
-                managed = new HashMap<String, Dependency>();
-                if ( project.getDependencyManagement() != null )
-                {
-                    for ( Dependency dep : project.getDependencyManagement().getDependencies() )
-                    {
-                        managed.put( dep.getManagementKey(), dep );
-                    }
-                }
-            }
-
-            String key =
-                ArtifactIdUtils.toVersionlessId( artifact.getGroupId(), artifact.getArtifactId(),
-                                                artifact.getProperty( ArtifactProperties.TYPE, "jar" ),
-                                                artifact.getClassifier() );
-
-            Dependency dependency = managed.get( key );
-            if ( dependency != null )
-            {
-                InputLocation location = dependency.getLocation( field );
-                if ( location != null )
-                {
-                    InputSource source = location.getSource();
-                    if ( source != null )
-                    {
-                        buffer.append( " by " ).append( source.getModelId() );
-                    }
-                }
-            }
         }
 
     }

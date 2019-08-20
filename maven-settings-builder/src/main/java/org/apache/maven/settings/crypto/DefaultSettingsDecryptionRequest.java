@@ -29,7 +29,7 @@ import org.apache.maven.settings.Settings;
 
 /**
  * Collects parameters that control the decryption of settings.
- * 
+ *
  * @author Benjamin Bentmann
  */
 public class DefaultSettingsDecryptionRequest
@@ -50,7 +50,7 @@ public class DefaultSettingsDecryptionRequest
 
     /**
      * Creates a new request to decrypt the specified settings.
-     * 
+     *
      * @param settings The settings to decrypt, must not be {@code null}.
      */
     public DefaultSettingsDecryptionRequest( Settings settings )
@@ -61,34 +61,36 @@ public class DefaultSettingsDecryptionRequest
 
     /**
      * Creates a new request to decrypt the specified server.
-     * 
+     *
      * @param server The server to decrypt, must not be {@code null}.
      */
     public DefaultSettingsDecryptionRequest( Server server )
     {
-        this.servers = new ArrayList<Server>( Arrays.asList( server ) );
+        this.servers = new ArrayList<>( Arrays.asList( server ) );
     }
 
     /**
      * Creates a new request to decrypt the specified proxy.
-     * 
+     *
      * @param proxy The proxy to decrypt, must not be {@code null}.
      */
     public DefaultSettingsDecryptionRequest( Proxy proxy )
     {
-        this.proxies = new ArrayList<Proxy>( Arrays.asList( proxy ) );
+        this.proxies = new ArrayList<>( Arrays.asList( proxy ) );
     }
 
+    @Override
     public List<Server> getServers()
     {
         if ( servers == null )
         {
-            servers = new ArrayList<Server>();
+            servers = new ArrayList<>();
         }
 
         return servers;
     }
 
+    @Override
     public DefaultSettingsDecryptionRequest setServers( List<Server> servers )
     {
         this.servers = servers;
@@ -96,16 +98,18 @@ public class DefaultSettingsDecryptionRequest
         return this;
     }
 
+    @Override
     public List<Proxy> getProxies()
     {
         if ( proxies == null )
         {
-            proxies = new ArrayList<Proxy>();
+            proxies = new ArrayList<>();
         }
 
         return proxies;
     }
 
+    @Override
     public DefaultSettingsDecryptionRequest setProxies( List<Proxy> proxies )
     {
         this.proxies = proxies;

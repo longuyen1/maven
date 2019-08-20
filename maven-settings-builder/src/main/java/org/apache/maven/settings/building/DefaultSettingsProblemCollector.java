@@ -26,7 +26,7 @@ import org.apache.maven.settings.io.SettingsParseException;
 
 /**
  * Collects problems that are encountered during settings building.
- * 
+ *
  * @author Benjamin Bentmann
  */
 class DefaultSettingsProblemCollector
@@ -37,7 +37,7 @@ class DefaultSettingsProblemCollector
 
     private String source;
 
-    public DefaultSettingsProblemCollector( List<SettingsProblem> problems )
+    DefaultSettingsProblemCollector( List<SettingsProblem> problems )
     {
         this.problems = ( problems != null ) ? problems : new ArrayList<SettingsProblem>();
     }
@@ -52,6 +52,7 @@ class DefaultSettingsProblemCollector
         this.source = source;
     }
 
+    @Override
     public void add( SettingsProblem.Severity severity, String message, int line, int column, Exception cause )
     {
         if ( line <= 0 && column <= 0 && ( cause instanceof SettingsParseException ) )

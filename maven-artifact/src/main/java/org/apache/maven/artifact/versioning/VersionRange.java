@@ -23,6 +23,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.WeakHashMap;
 
 import org.apache.maven.artifact.Artifact;
 
@@ -33,6 +35,12 @@ import org.apache.maven.artifact.Artifact;
  */
 public class VersionRange
 {
+    private static final Map<String, VersionRange> CACHE_SPEC =
+        Collections.<String, VersionRange>synchronizedMap( new WeakHashMap<String, VersionRange>() );
+
+    private static final Map<String, VersionRange> CACHE_VERSION =
+                    Collections.<String, VersionRange>synchronizedMap( new WeakHashMap<String, VersionRange>() );
+
     private final ArtifactVersion recommendedVersion;
 
     private final List<Restriction> restrictions;
@@ -54,13 +62,18 @@ public class VersionRange
         return restrictions;
     }
 
+    /**
+     * @deprecated VersionRange is immutable, cloning is not useful and even more an issue against the cache 
+     * @return a clone
+     */
+    @Deprecated
     public VersionRange cloneOf()
     {
         List<Restriction> copiedRestrictions = null;
 
         if ( restrictions != null )
         {
-            copiedRestrictions = new ArrayList<Restriction>();
+            copiedRestrictions = new ArrayList<>();
 
             if ( !restrictions.isEmpty() )
             {
@@ -72,9 +85,10 @@ public class VersionRange
     }
 
     /**
+     * <p>
      * Create a version range from a string representation
-     * <p/>
-     * Some spec examples are
+     * </p>
+     * Some spec examples are:
      * <ul>
      * <li><code>1.0</code> Version 1.0</li>
      * <li><code>[1.0,2.0)</code> Versions 1.0 (included) to 2.0 (not included)</li>
@@ -96,7 +110,13 @@ public class VersionRange
             return null;
         }
 
-        List<Restriction> restrictions = new ArrayList<Restriction>();
+        VersionRange cached = CACHE_SPEC.get( spec );
+        if ( cached != null )
+        {
+            return cached;
+        }
+
+        List<Restriction> restrictions = new ArrayList<>();
         String process = spec;
         ArtifactVersion version = null;
         ArtifactVersion upperBound = null;
@@ -104,8 +124,8 @@ public class VersionRange
 
         while ( process.startsWith( "[" ) || process.startsWith( "(" ) )
         {
-            int index1 = process.indexOf( ")" );
-            int index2 = process.indexOf( "]" );
+            int index1 = process.indexOf( ')' );
+            int index2 = process.indexOf( ']' );
 
             int index = index2;
             if ( index2 < 0 || index1 < index2 )
@@ -158,7 +178,9 @@ public class VersionRange
             }
         }
 
-        return new VersionRange( version, restrictions );
+        cached = new VersionRange( version, restrictions );
+        CACHE_SPEC.put( spec, cached );
+        return cached;
     }
 
     private static Restriction parseRestriction( String spec )
@@ -171,7 +193,7 @@ public class VersionRange
 
         Restriction restriction;
 
-        int index = process.indexOf( "," );
+        int index = process.indexOf( ',' );
 
         if ( index < 0 )
         {
@@ -217,8 +239,14 @@ public class VersionRange
 
     public static VersionRange createFromVersion( String version )
     {
-        List<Restriction> restrictions = Collections.emptyList();
-        return new VersionRange( new DefaultArtifactVersion( version ), restrictions );
+        VersionRange cached = CACHE_VERSION.get( version );
+        if ( cached == null )
+        {
+            List<Restriction> restrictions = Collections.emptyList();
+            cached = new VersionRange( new DefaultArtifactVersion( version ), restrictions );
+            CACHE_VERSION.put( version, cached );
+        }
+        return cached;
     }
 
     /**
@@ -261,7 +289,7 @@ public class VersionRange
         }
         else
         {
-            restrictions = intersection( r1, r2 );
+            restrictions = Collections.unmodifiableList( intersection( r1, r2 ) );
         }
 
         ArtifactVersion version = null;
@@ -295,7 +323,7 @@ public class VersionRange
             // original recommended version
             version = restriction.recommendedVersion;
         }
-/* TODO: should throw this immediately, but need artifact
+/* TODO should throw this immediately, but need artifact
         else
         {
             throw new OverConstrainedVersionException( "Restricting incompatible version ranges" );
@@ -307,7 +335,7 @@ public class VersionRange
 
     private List<Restriction> intersection( List<Restriction> r1, List<Restriction> r2 )
     {
-        List<Restriction> restrictions = new ArrayList<Restriction>( r1.size() + r2.size() );
+        List<Restriction> restrictions = new ArrayList<>( r1.size() + r2.size() );
         Iterator<Restriction> i1 = r1.iterator();
         Iterator<Restriction> i2 = r2.iterator();
         Restriction res1 = i1.next();
@@ -518,7 +546,7 @@ public class VersionRange
 
     public ArtifactVersion matchVersion( List<ArtifactVersion> versions )
     {
-        // TODO: could be more efficient by sorting the list and then moving along the restrictions in order?
+        // TODO could be more efficient by sorting the list and then moving along the restrictions in order?
 
         ArtifactVersion matched = null;
         for ( ArtifactVersion version : versions )

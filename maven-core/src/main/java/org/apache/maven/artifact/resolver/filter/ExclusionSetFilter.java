@@ -35,7 +35,7 @@ public class ExclusionSetFilter
 
     public ExclusionSetFilter( String[] excludes )
     {
-        this.excludes = new LinkedHashSet<String>( Arrays.asList( excludes ) );
+        this.excludes = new LinkedHashSet<>( Arrays.asList( excludes ) );
     }
 
     public ExclusionSetFilter( Set<String> excludes )
@@ -73,14 +73,14 @@ public class ExclusionSetFilter
         {
             return true;
         }
-        
+
         if ( !( obj instanceof ExclusionSetFilter ) )
         {
             return false;
         }
-        
+
         ExclusionSetFilter other = (ExclusionSetFilter) obj;
-        
+
         return excludes.equals( other.excludes );
     }
 }

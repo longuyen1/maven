@@ -33,13 +33,14 @@ import org.apache.maven.execution.MavenSession;
 import org.apache.maven.project.MavenProject;
 
 /**
+ * <p>
  * A list of project segments, ordered so that all ProjectSegments from first TaskSegment come before any
  * subsequent TaskSegments.
- * 
+ * </p>
+ * <strong>Note:</strong> This interface is part of work in progress and can be changed or removed without notice.
+ *
  * @since 3.0
  * @author Kristian Rosenvold
- *         <p/>
- *         NOTE: This class is not part of any public api and can be changed or deleted without prior notice.
  */
 public class ProjectBuildList
     implements Iterable<ProjectSegment>
@@ -51,7 +52,7 @@ public class ProjectBuildList
         this.items = Collections.unmodifiableList( items );
     }
 
-    // TODO: Optimize; or maybe just rewrite the whole way aggregating mojos are being run.
+    // TODO Optimize; or maybe just rewrite the whole way aggregating mojos are being run.
     /**
      * Returns aProjectBuildList that contains only items for the specified taskSegment
      * @param taskSegment the requested tasksegment
@@ -59,7 +60,7 @@ public class ProjectBuildList
      */
     public ProjectBuildList getByTaskSegment( TaskSegment taskSegment )
     {
-        List<ProjectSegment> currentSegment = new ArrayList<ProjectSegment>();
+        List<ProjectSegment> currentSegment = new ArrayList<>();
         for ( ProjectSegment projectBuild : items )
         {
             if ( taskSegment == projectBuild.getTaskSegment() )
@@ -72,7 +73,7 @@ public class ProjectBuildList
 
     public Map<MavenProject, ProjectSegment> selectSegment( TaskSegment taskSegment )
     {
-        Map<MavenProject, ProjectSegment> result = new HashMap<MavenProject, ProjectSegment>();
+        Map<MavenProject, ProjectSegment> result = new HashMap<>();
         for ( ProjectSegment projectBuild : items )
         {
             if ( taskSegment == projectBuild.getTaskSegment() )
@@ -126,7 +127,7 @@ public class ProjectBuildList
 
     public Set<String> getReactorProjectKeys()
     {
-        Set<String> projectKeys = new HashSet<String>( items.size() * 2 );
+        Set<String> projectKeys = new HashSet<>( items.size() * 2 );
         for ( ProjectSegment projectBuild : items )
         {
             MavenProject project = projectBuild.getProject();
@@ -147,7 +148,7 @@ public class ProjectBuildList
      */
     public Set<MavenProject> getProjects()
     {
-        Set<MavenProject> projects = new HashSet<MavenProject>();
+        Set<MavenProject> projects = new HashSet<>();
 
         for ( ProjectSegment s : items )
         {

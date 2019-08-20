@@ -19,15 +19,16 @@ package org.apache.maven.model.interpolation;
  * under the License.
  */
 
+import org.apache.maven.model.InputLocation;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.building.ModelBuildingRequest;
 import org.apache.maven.model.building.ModelProblem.Severity;
 import org.apache.maven.model.building.ModelProblem.Version;
 import org.apache.maven.model.building.ModelProblemCollector;
 import org.apache.maven.model.building.ModelProblemCollectorRequest;
-import org.codehaus.plexus.component.annotations.Component;
+import org.codehaus.plexus.interpolation.InterpolationException;
 import org.codehaus.plexus.interpolation.InterpolationPostProcessor;
-import org.codehaus.plexus.interpolation.Interpolator;
+import org.codehaus.plexus.interpolation.RecursionInterceptor;
 import org.codehaus.plexus.interpolation.StringSearchInterpolator;
 import org.codehaus.plexus.interpolation.ValueSource;
 
@@ -39,87 +40,114 @@ import java.security.AccessController;
 import java.security.PrivilegedAction;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-@Component( role = ModelInterpolator.class )
+import javax.inject.Named;
+import javax.inject.Singleton;
+
+/**
+ * StringSearchModelInterpolator
+ */
+@Named
+@Singleton
 public class StringSearchModelInterpolator
     extends AbstractStringBasedModelInterpolator
 {
-
     private static final Map<Class<?>, InterpolateObjectAction.CacheItem> CACHED_ENTRIES =
-        new ConcurrentHashMap<Class<?>, InterpolateObjectAction.CacheItem>( 80, 0.75f, 2 );
+        new ConcurrentHashMap<>( 80, 0.75f, 2 );
     // Empirical data from 3.x, actual =40
 
+    private interface InnerInterpolator
+    {
+        String interpolate( String value );
+    }
 
+    @Override
     public Model interpolateModel( Model model, File projectDir, ModelBuildingRequest config,
                                    ModelProblemCollector problems )
     {
         interpolateObject( model, model, projectDir, config, problems );
-
         return model;
     }
 
-    protected void interpolateObject( Object obj, Model model, File projectDir, ModelBuildingRequest config,
-                                      ModelProblemCollector problems )
+    void interpolateObject( Object obj, Model model, File projectDir, ModelBuildingRequest config,
+                            ModelProblemCollector problems )
     {
-        try
-        {
-            List<? extends ValueSource> valueSources = createValueSources( model, projectDir, config, problems );
-            List<? extends InterpolationPostProcessor> postProcessors =
-                createPostProcessors( model, projectDir, config );
+        List<? extends ValueSource> valueSources = createValueSources( model, projectDir, config, problems );
+        List<? extends InterpolationPostProcessor> postProcessors = createPostProcessors( model, projectDir, config );
 
-            InterpolateObjectAction action =
-                new InterpolateObjectAction( obj, valueSources, postProcessors, this, problems );
+        InnerInterpolator innerInterpolator = createInterpolator( valueSources, postProcessors, problems );
 
-            AccessController.doPrivileged( action );
-        }
-        finally
-        {
-            getInterpolator().clearAnswers();
-        }
+        PrivilegedAction<Object> action = new InterpolateObjectAction( obj, innerInterpolator, problems );
+        AccessController.doPrivileged( action );
     }
 
-    protected Interpolator createInterpolator()
+    private InnerInterpolator createInterpolator( List<? extends ValueSource> valueSources,
+                                                  List<? extends InterpolationPostProcessor> postProcessors,
+                                                  final ModelProblemCollector problems )
     {
-        StringSearchInterpolator interpolator = new StringSearchInterpolator();
+        final Map<String, String> cache = new HashMap<>();
+        final StringSearchInterpolator interpolator = new StringSearchInterpolator();
         interpolator.setCacheAnswers( true );
-
-        return interpolator;
+        for ( ValueSource vs : valueSources )
+        {
+            interpolator.addValueSource( vs );
+        }
+        for ( InterpolationPostProcessor postProcessor : postProcessors )
+        {
+            interpolator.addPostProcessor( postProcessor );
+        }
+        final RecursionInterceptor recursionInterceptor = createRecursionInterceptor();
+        return new InnerInterpolator()
+        {
+            @Override
+            public String interpolate( String value )
+            {
+                if ( value != null && value.contains( "${" ) )
+                {
+                    String c = cache.get( value );
+                    if ( c == null )
+                    {
+                        try
+                        {
+                            c = interpolator.interpolate( value, recursionInterceptor );
+                        }
+                        catch ( InterpolationException e )
+                        {
+                            problems.add( new ModelProblemCollectorRequest( Severity.ERROR, Version.BASE )
+                                    .setMessage( e.getMessage() ).setException( e ) );
+                        }
+                        cache.put( value, c );
+                    }
+                    return c;
+                }
+                return value;
+            }
+        };
     }
 
     private static final class InterpolateObjectAction
         implements PrivilegedAction<Object>
     {
-
         private final LinkedList<Object> interpolationTargets;
 
-        private final StringSearchModelInterpolator modelInterpolator;
-
-        private final List<? extends ValueSource> valueSources;
-
-        private final List<? extends InterpolationPostProcessor> postProcessors;
+        private final InnerInterpolator interpolator;
 
         private final ModelProblemCollector problems;
 
-        public InterpolateObjectAction( Object target, List<? extends ValueSource> valueSources,
-                                        List<? extends InterpolationPostProcessor> postProcessors,
-                                        StringSearchModelInterpolator modelInterpolator,
-                                        ModelProblemCollector problems )
+        InterpolateObjectAction( Object target, InnerInterpolator interpolator, ModelProblemCollector problems )
         {
-            this.valueSources = valueSources;
-            this.postProcessors = postProcessors;
-
-            this.interpolationTargets = new LinkedList<Object>();
+            this.interpolationTargets = new LinkedList<>();
             interpolationTargets.add( target );
-
-            this.modelInterpolator = modelInterpolator;
-
+            this.interpolator = interpolator;
             this.problems = problems;
         }
 
+        @Override
         public Object run()
         {
             while ( !interpolationTargets.isEmpty() )
@@ -128,14 +156,12 @@ public class StringSearchModelInterpolator
 
                 traverseObjectWithParents( obj.getClass(), obj );
             }
-
             return null;
         }
 
-
         private String interpolate( String value )
         {
-            return modelInterpolator.interpolateInternal( value, valueSources, postProcessors, problems );
+            return interpolator.interpolate( value );
         }
 
         private void traverseObjectWithParents( Class<?> cls, Object target )
@@ -157,7 +183,6 @@ public class StringSearchModelInterpolator
                 traverseObjectWithParents( cls.getSuperclass(), target );
             }
         }
-
 
         private CacheItem getCacheEntry( Class<?> cls )
         {
@@ -205,12 +230,22 @@ public class StringSearchModelInterpolator
 
             private boolean isQualifiedForInterpolation( Class<?> cls )
             {
-                return !cls.getName().startsWith( "java" );
+                Package pkg = cls.getPackage();
+                if ( pkg == null )
+                {
+                    return true;
+                }
+                String pkgName = pkg.getName();
+                return !pkgName.startsWith( "java." ) && !pkgName.startsWith( "javax." );
             }
 
             private boolean isQualifiedForInterpolation( Field field, Class<?> fieldType )
             {
                 if ( Map.class.equals( fieldType ) && "locations".equals( field.getName() ) )
+                {
+                    return false;
+                }
+                if ( InputLocation.class.equals( fieldType ) )
                 {
                     return false;
                 }
@@ -228,43 +263,45 @@ public class StringSearchModelInterpolator
             {
                 this.isQualifiedForInterpolation = isQualifiedForInterpolation( clazz );
                 this.isArray = clazz.isArray();
-                List<CacheField> fields = new ArrayList<CacheField>();
-                for ( Field currentField : clazz.getDeclaredFields() )
+                List<CacheField> fields = new ArrayList<>();
+                if ( isQualifiedForInterpolation )
                 {
-                    Class<?> type = currentField.getType();
-                    if ( isQualifiedForInterpolation( currentField, type ) )
+                    for ( Field currentField : clazz.getDeclaredFields() )
                     {
-                        if ( String.class == type )
+                        Class<?> type = currentField.getType();
+                        if ( isQualifiedForInterpolation( currentField, type ) )
                         {
-                            if ( !Modifier.isFinal( currentField.getModifiers() ) )
+                            if ( String.class == type )
                             {
-                                fields.add( new StringField( currentField ) );
+                                if ( !Modifier.isFinal( currentField.getModifiers() ) )
+                                {
+                                    fields.add( new StringField( currentField ) );
+                                }
+                            }
+                            else if ( List.class.isAssignableFrom( type ) )
+                            {
+                                fields.add( new ListField( currentField ) );
+                            }
+                            else if ( Collection.class.isAssignableFrom( type ) )
+                            {
+                                throw new RuntimeException(
+                                        "We dont interpolate into collections, use a list instead" );
+                            }
+                            else if ( Map.class.isAssignableFrom( type ) )
+                            {
+                                fields.add( new MapField( currentField ) );
+                            }
+                            else
+                            {
+                                fields.add( new ObjectField( currentField ) );
                             }
                         }
-                        else if ( List.class.isAssignableFrom( type ) )
-                        {
-                            fields.add( new ListField( currentField ) );
-                        }
-                        else if ( Collection.class.isAssignableFrom( type ) )
-                        {
-                            throw new RuntimeException( "We dont interpolate into collections, use a list instead" );
-                        }
-                        else if ( Map.class.isAssignableFrom( type ) )
-                        {
-                            fields.add( new MapField( currentField ) );
-                        }
-                        else
-                        {
-                            fields.add( new ObjectField( currentField ) );
-                        }
                     }
-
                 }
-                this.fields = fields.toArray( new CacheField[fields.size()] );
-
+                this.fields = fields.toArray( new CacheField[0] );
             }
 
-            public void interpolate( Object target, InterpolateObjectAction interpolateObjectAction )
+            void interpolate( Object target, InterpolateObjectAction interpolateObjectAction )
             {
                 for ( CacheField field : fields )
                 {
@@ -272,7 +309,7 @@ public class StringSearchModelInterpolator
                 }
             }
 
-            public boolean isArray()
+            boolean isArray()
             {
                 return isArray;
             }
@@ -280,45 +317,35 @@ public class StringSearchModelInterpolator
 
         abstract static class CacheField
         {
-            protected final Field field;
+            final Field field;
 
             CacheField( Field field )
             {
                 this.field = field;
+                field.setAccessible( true );
             }
 
             void interpolate( Object target, InterpolateObjectAction interpolateObjectAction )
             {
-                synchronized ( field )
+                try
                 {
-                    boolean isAccessible = field.isAccessible();
-                    field.setAccessible( true );
-                    try
-                    {
-                        doInterpolate( target, interpolateObjectAction );
-                    }
-                    catch ( IllegalArgumentException e )
-                    {
-                        interpolateObjectAction.problems.add(
-                            new ModelProblemCollectorRequest( Severity.ERROR, Version.BASE ).setMessage(
-                                "Failed to interpolate field3: " + field + " on class: "
-                                    + field.getType().getName() ).setException(
-                                e ) ); // todo: Not entirely the same message
-                    }
-                    catch ( IllegalAccessException e )
-                    {
-                        interpolateObjectAction.problems.add(
-                            new ModelProblemCollectorRequest( Severity.ERROR, Version.BASE ).setMessage(
-                                "Failed to interpolate field4: " + field + " on class: "
-                                    + field.getType().getName() ).setException( e ) );
-                    }
-                    finally
-                    {
-                        field.setAccessible( isAccessible );
-                    }
+                    doInterpolate( target, interpolateObjectAction );
                 }
-
-
+                catch ( IllegalArgumentException e )
+                {
+                    interpolateObjectAction.problems.add(
+                        new ModelProblemCollectorRequest( Severity.ERROR, Version.BASE ).setMessage(
+                            "Failed to interpolate field3: " + field + " on class: "
+                                + field.getType().getName() ).setException(
+                            e ) ); // TODO Not entirely the same message
+                }
+                catch ( IllegalAccessException e )
+                {
+                    interpolateObjectAction.problems.add(
+                        new ModelProblemCollectorRequest( Severity.ERROR, Version.BASE ).setMessage(
+                            "Failed to interpolate field4: " + field + " on class: "
+                                + field.getType().getName() ).setException( e ) );
+                }
             }
 
             abstract void doInterpolate( Object target, InterpolateObjectAction ctx )
@@ -370,12 +397,9 @@ public class StringSearchModelInterpolator
                     return;
                 }
 
-                int size = c.size();
-                Object value;
-                for ( int i = 0; i < size; i++ )
+                for ( int i = 0, size = c.size(); i < size; i++ )
                 {
-
-                    value = c.get( i );
+                    Object value = c.get( i );
 
                     if ( value != null )
                     {
@@ -450,6 +474,7 @@ public class StringSearchModelInterpolator
                             }
                             catch ( UnsupportedOperationException ignore )
                             {
+                                // nop
                             }
                         }
                     }
@@ -494,7 +519,5 @@ public class StringSearchModelInterpolator
                 }
             }
         }
-
     }
-
 }

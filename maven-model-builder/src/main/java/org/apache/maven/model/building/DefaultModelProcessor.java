@@ -25,21 +25,29 @@ import java.io.InputStream;
 import java.io.Reader;
 import java.util.Map;
 
+import javax.inject.Inject;
+import javax.inject.Named;
+import javax.inject.Singleton;
+
 import org.apache.maven.model.Model;
 import org.apache.maven.model.io.ModelReader;
 import org.apache.maven.model.locator.ModelLocator;
-import org.codehaus.plexus.component.annotations.Component;
-import org.codehaus.plexus.component.annotations.Requirement;
+import org.eclipse.sisu.Typed;
 
-@Component( role = ModelProcessor.class )
+/**
+ * DefaultModelProcessor
+ */
+@Named
+@Singleton
+@Typed( ModelProcessor.class )
 public class DefaultModelProcessor
     implements ModelProcessor
 {
 
-    @Requirement
+    @Inject
     private ModelLocator locator;
 
-    @Requirement
+    @Inject
     private ModelReader reader;
 
     public DefaultModelProcessor setModelLocator( ModelLocator locator )
@@ -54,23 +62,27 @@ public class DefaultModelProcessor
         return this;
     }
 
+    @Override
     public File locatePom( File projectDirectory )
     {
         return locator.locatePom( projectDirectory );
     }
 
+    @Override
     public Model read( File input, Map<String, ?> options )
         throws IOException
     {
         return reader.read( input, options );
     }
 
+    @Override
     public Model read( Reader input, Map<String, ?> options )
         throws IOException
     {
         return reader.read( input, options );
     }
 
+    @Override
     public Model read( InputStream input, Map<String, ?> options )
         throws IOException
     {

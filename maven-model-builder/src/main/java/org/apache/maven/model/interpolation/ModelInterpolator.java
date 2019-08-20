@@ -26,12 +26,10 @@ import org.apache.maven.model.building.ModelProblemCollector;
 import java.io.File;
 
 /**
- * Replaces expressions of the form <tt>${token}</tt> with their effective values. Effective values are basically
+ * Replaces expressions of the form <code>${token}</code> with their effective values. Effective values are basically
  * calculated from the elements of the model itself and the execution properties from the building request.
  *
  * @author jdcasey
- *         <p/>
- *         Created on Feb 2, 2005
  */
 public interface ModelInterpolator
 {

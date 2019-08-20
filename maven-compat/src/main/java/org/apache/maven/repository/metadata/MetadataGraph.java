@@ -103,8 +103,9 @@ public class MetadataGraph
      * construct graph from a "dirty" tree
      *
      * @param tree "dirty" tree root
-     * @param versionedVertices true if graph nodes should be versioned (different versions -> different nodes)
-     * @param scopedVertices true if graph nodes should be versioned and scoped (different versions and/or scopes -> different nodes)
+     * @param versionedVertices true if graph nodes should be versioned (different versions -&gt; different nodes)
+     * @param scopedVertices true if graph nodes should be versioned and scoped
+     * (different versions and/or scopes -&gt; different nodes)
      *
      */
     public MetadataGraph( MetadataTreeNode tree, boolean versionedVertices, boolean scopedVertices )
@@ -244,7 +245,7 @@ public class MetadataGraph
     {
         if ( vertices == null )
         {
-            vertices = new TreeSet<MetadataGraphVertex>();
+            vertices = new TreeSet<>();
         }
     }
     private void checkEdges()
@@ -262,11 +263,11 @@ public class MetadataGraph
     {
         if ( incidentEdges == null )
         {
-            incidentEdges = new HashMap<MetadataGraphVertex, List<MetadataGraphEdge>>( nEdges );
+            incidentEdges = new HashMap<>( nEdges );
         }
         if ( excidentEdges == null )
         {
-            excidentEdges = new HashMap<MetadataGraphVertex, List<MetadataGraphEdge>>( nEdges );
+            excidentEdges = new HashMap<>( nEdges );
         }
     }
     //------------------------------------------------------------------------
@@ -300,7 +301,7 @@ public class MetadataGraph
             return null;
         }
 
-        List<MetadataGraphEdge> res = new ArrayList<MetadataGraphEdge>( edges.size() );
+        List<MetadataGraphEdge> res = new ArrayList<>( edges.size() );
 
         for ( MetadataGraphEdge e : edges )
         {
@@ -333,7 +334,7 @@ public class MetadataGraph
         List<MetadataGraphEdge> exList = excidentEdges.get( vFrom );
         if ( exList == null )
         {
-            exList = new ArrayList<MetadataGraphEdge>();
+            exList = new ArrayList<>();
             excidentEdges.put( vFrom, exList );
         }
 
@@ -345,7 +346,7 @@ public class MetadataGraph
         List<MetadataGraphEdge> inList = incidentEdges.get( vTo );
         if ( inList == null )
         {
-            inList = new ArrayList<MetadataGraphEdge>();
+            inList = new ArrayList<>();
             incidentEdges.put( vTo, inList );
         }
 
@@ -485,13 +486,13 @@ public class MetadataGraph
         }
         for ( MetadataGraphVertex v : vertices )
         {
-            sb.append( "Vertex:  " ).append( v.getMd().toString() ).append( "\n" );
+            sb.append( "Vertex:  " ).append( v.getMd().toString() ).append( '\n' );
             List<MetadataGraphEdge> ins = getIncidentEdges( v );
             if ( ins != null )
             {
                 for ( MetadataGraphEdge e : ins )
                 {
-                    sb.append( "       from :  " ).append( e.toString() ).append( "\n" );
+                    sb.append( "       from :  " ).append( e.toString() ).append( '\n' );
                 }
             }
             else
@@ -504,7 +505,7 @@ public class MetadataGraph
             {
                 for ( MetadataGraphEdge e : outs )
                 {
-                    sb.append( "        to :  " ).append( e.toString() ).append( "\n" );
+                    sb.append( "        to :  " ).append( e.toString() ).append( '\n' );
                 }
             }
             else

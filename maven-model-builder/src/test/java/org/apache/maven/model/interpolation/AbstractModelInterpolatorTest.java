@@ -30,7 +30,8 @@ import org.apache.maven.model.building.DefaultModelBuildingRequest;
 import org.apache.maven.model.building.ModelBuildingRequest;
 import org.apache.maven.model.building.SimpleProblemCollector;
 import org.apache.maven.model.path.PathTranslator;
-import org.codehaus.plexus.PlexusTestCase;
+
+import junit.framework.TestCase;
 
 import java.io.File;
 import java.text.SimpleDateFormat;
@@ -45,7 +46,7 @@ import java.util.TimeZone;
  * @author jdcasey
  */
 public abstract class AbstractModelInterpolatorTest
-    extends PlexusTestCase
+    extends TestCase
 {
     private Properties context;
 
@@ -67,12 +68,22 @@ public abstract class AbstractModelInterpolatorTest
         assertEquals( "Expected no fatals", 0, collector.getFatals().size() );
     }
 
+    /**
+     * @deprecated instead use {@link #assertCollectorState(int, int, int, SimpleProblemCollector)}
+     */
+    @Deprecated
     protected void assertColllectorState( int numFatals, int numErrors, int numWarnings,
                                           SimpleProblemCollector collector )
     {
         assertEquals( "Errors",  numErrors, collector.getErrors().size() );
         assertEquals( "Warnings", numWarnings, collector.getWarnings().size() );
         assertEquals( "Fatals", numFatals, collector.getFatals().size() );
+    }
+
+    protected void assertCollectorState( int numFatals, int numErrors, int numWarnings,
+                                          SimpleProblemCollector collector )
+    {
+        assertColllectorState(numFatals, numErrors, numWarnings, collector);
     }
 
     private ModelBuildingRequest createModelBuildingRequest( Properties p )
@@ -88,7 +99,7 @@ public abstract class AbstractModelInterpolatorTest
     public void testDefaultBuildTimestampFormatShouldFormatTimeIn24HourFormat()
     {
         Calendar cal = Calendar.getInstance();
-        cal.setTimeZone(TimeZone.getTimeZone("UTC"));
+        cal.setTimeZone( MavenBuildTimestamp.DEFAULT_BUILD_TIME_ZONE );
         cal.set( Calendar.HOUR, 12 );
         cal.set( Calendar.AM_PM, Calendar.AM );
 
@@ -112,7 +123,7 @@ public abstract class AbstractModelInterpolatorTest
 
         SimpleDateFormat format =
             new SimpleDateFormat( MavenBuildTimestamp.DEFAULT_BUILD_TIMESTAMP_FORMAT );
-        format.setTimeZone(TimeZone.getTimeZone("UTC"));
+        format.setTimeZone( MavenBuildTimestamp.DEFAULT_BUILD_TIME_ZONE );
         assertEquals( "1976-11-11T00:16:00Z", format.format( firstTestDate ) );
         assertEquals( "1976-11-11T23:16:00Z", format.format( secondTestDate ) );
     }
@@ -120,7 +131,7 @@ public abstract class AbstractModelInterpolatorTest
     public void testDefaultBuildTimestampFormatWithLocalTimeZoneMidnightRollover()
     {
         Calendar cal = Calendar.getInstance();
-        cal.setTimeZone(TimeZone.getTimeZone("Europe/Berlin"));
+        cal.setTimeZone( TimeZone.getTimeZone( "Europe/Berlin" ) );
 
         cal.set( Calendar.HOUR_OF_DAY, 1 );
         cal.set( Calendar.MINUTE, 16 );
@@ -137,7 +148,7 @@ public abstract class AbstractModelInterpolatorTest
 
         SimpleDateFormat format =
             new SimpleDateFormat( MavenBuildTimestamp.DEFAULT_BUILD_TIMESTAMP_FORMAT );
-        format.setTimeZone(TimeZone.getTimeZone("UTC"));
+        format.setTimeZone( MavenBuildTimestamp.DEFAULT_BUILD_TIME_ZONE );
         assertEquals( "2014-06-15T23:16:00Z", format.format( firstTestDate ) );
         assertEquals( "2014-11-16T00:16:00Z", format.format( secondTestDate ) );
     }
@@ -178,7 +189,7 @@ public abstract class AbstractModelInterpolatorTest
 
             final SimpleProblemCollector collector = new SimpleProblemCollector();
             interpolator.interpolateModel( model, null, createModelBuildingRequest( context ), collector );
-            assertColllectorState(  0, 1, 0, collector );
+            assertCollectorState(  0, 1, 0, collector );
         }
         catch ( Exception e )
         {
@@ -247,7 +258,7 @@ public abstract class AbstractModelInterpolatorTest
         final SimpleProblemCollector collector = new SimpleProblemCollector();
         Model out =
             interpolator.interpolateModel( model, new File( "." ), createModelBuildingRequest( context ), collector );
-        assertColllectorState(0, 0, 1, collector );
+        assertCollectorState(0, 0, 1, collector );
 
         assertEquals( "3.8.1", ( out.getDependencies().get( 0 ) ).getVersion() );
     }
@@ -305,7 +316,7 @@ public abstract class AbstractModelInterpolatorTest
         final SimpleProblemCollector collector = new SimpleProblemCollector();
         Model out =
             interpolator.interpolateModel( model, new File( "." ), createModelBuildingRequest( context ), collector );
-        assertColllectorState( 0, 0, 2, collector );
+        assertCollectorState( 0, 0, 2, collector );
 
         assertEquals( "foo-3.8.1", ( out.getDependencies().get( 0 ) ).getVersion() );
     }
@@ -450,7 +461,7 @@ public abstract class AbstractModelInterpolatorTest
 
         final SimpleProblemCollector collector = new SimpleProblemCollector();
         Model out = interpolator.interpolateModel( model, null, createModelBuildingRequest( context ), collector );
-        assertColllectorState( 0, 0, 2, collector );
+        assertCollectorState( 0, 0, 2, collector );
 
 
         List<Resource> outResources = out.getBuild().getResources();

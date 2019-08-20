@@ -33,7 +33,7 @@ import org.codehaus.plexus.util.xml.Xpp3Dom;
 
 /**
  * A node iterator for JXPath to support <code>Xpp3Dom</code>.
- * 
+ *
  * @author Benjamin Bentmann
  */
 class Xpp3DomNodeIterator
@@ -48,7 +48,7 @@ class Xpp3DomNodeIterator
 
     private Xpp3Dom[] children;
 
-    private List<Xpp3Dom> filteredChildren = new ArrayList<Xpp3Dom>();
+    private List<Xpp3Dom> filteredChildren = new ArrayList<>();
 
     private int filteredIndex;
 

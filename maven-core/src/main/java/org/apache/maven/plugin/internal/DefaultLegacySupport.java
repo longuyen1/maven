@@ -29,7 +29,7 @@ import org.eclipse.aether.RepositorySystemSession;
  * Helps to provide backward-compatibility with plugins that use legacy components. <strong>Warning:</strong> This is an
  * internal utility component that is only public for technical reasons, it is not part of the public API. In
  * particular, this component can be changed or deleted without prior notice.
- * 
+ *
  * @since 3.0
  * @author Benjamin Bentmann
  */
@@ -38,7 +38,8 @@ public class DefaultLegacySupport
     implements LegacySupport
 {
 
-    private static final ThreadLocal<AtomicReference<MavenSession>> SESSION = new InheritableThreadLocal<AtomicReference<MavenSession>>();
+    private static final ThreadLocal<AtomicReference<MavenSession>> SESSION =
+        new InheritableThreadLocal<>();
 
     public void setSession( MavenSession session )
     {
@@ -54,7 +55,7 @@ public class DefaultLegacySupport
         }
         else
         {
-            DefaultLegacySupport.SESSION.set( new AtomicReference<MavenSession>( session ) );
+            DefaultLegacySupport.SESSION.set( new AtomicReference<>( session ) );
         }
     }
 

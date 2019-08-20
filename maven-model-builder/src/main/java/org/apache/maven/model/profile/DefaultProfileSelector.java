@@ -24,6 +24,10 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 
+import javax.inject.Inject;
+import javax.inject.Named;
+import javax.inject.Singleton;
+
 import org.apache.maven.model.Activation;
 import org.apache.maven.model.Profile;
 import org.apache.maven.model.building.ModelProblemCollector;
@@ -31,21 +35,20 @@ import org.apache.maven.model.building.ModelProblem.Severity;
 import org.apache.maven.model.building.ModelProblem.Version;
 import org.apache.maven.model.building.ModelProblemCollectorRequest;
 import org.apache.maven.model.profile.activation.ProfileActivator;
-import org.codehaus.plexus.component.annotations.Component;
-import org.codehaus.plexus.component.annotations.Requirement;
 
 /**
  * Calculates the active profiles among a given collection of profiles.
- * 
+ *
  * @author Benjamin Bentmann
  */
-@Component( role = ProfileSelector.class )
+@Named
+@Singleton
 public class DefaultProfileSelector
     implements ProfileSelector
 {
 
-    @Requirement( role = ProfileActivator.class )
-    private List<ProfileActivator> activators = new ArrayList<ProfileActivator>();
+    @Inject
+    private List<ProfileActivator> activators = new ArrayList<>();
 
     public DefaultProfileSelector addProfileActivator( ProfileActivator profileActivator )
     {
@@ -56,14 +59,15 @@ public class DefaultProfileSelector
         return this;
     }
 
+    @Override
     public List<Profile> getActiveProfiles( Collection<Profile> profiles, ProfileActivationContext context,
                                             ModelProblemCollector problems )
     {
-        Collection<String> activatedIds = new HashSet<String>( context.getActiveProfileIds() );
-        Collection<String> deactivatedIds = new HashSet<String>( context.getInactiveProfileIds() );
+        Collection<String> activatedIds = new HashSet<>( context.getActiveProfileIds() );
+        Collection<String> deactivatedIds = new HashSet<>( context.getInactiveProfileIds() );
 
-        List<Profile> activeProfiles = new ArrayList<Profile>( profiles.size() );
-        List<Profile> activePomProfilesByDefault = new ArrayList<Profile>();
+        List<Profile> activeProfiles = new ArrayList<>( profiles.size() );
+        List<Profile> activePomProfilesByDefault = new ArrayList<>();
         boolean activatedPomProfileNotByDefault = false;
 
         for ( Profile profile : profiles )

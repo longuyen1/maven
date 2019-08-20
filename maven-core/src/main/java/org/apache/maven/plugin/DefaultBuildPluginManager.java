@@ -37,9 +37,12 @@ import org.codehaus.plexus.component.annotations.Requirement;
 import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.repository.RemoteRepository;
 
-// TODO: the antrun plugin has its own configurator, the only plugin that does. might need to think about how that works
-// TODO: remove the coreArtifactFilterManager
+// TODO the antrun plugin has its own configurator, the only plugin that does. might need to think about how that works
+// TODO remove the coreArtifactFilterManager
 
+/**
+ * DefaultBuildPluginManager
+ */
 @Component( role = BuildPluginManager.class )
 public class DefaultBuildPluginManager
     implements BuildPluginManager
@@ -73,10 +76,12 @@ public class DefaultBuildPluginManager
      * @return PluginDescriptor The component descriptor for the Maven plugin.
      * @throws PluginNotFoundException The plugin could not be found in any repositories.
      * @throws PluginResolutionException The plugin could be found but could not be resolved.
-     * @throws InvalidPluginDescriptorException 
+     * @throws InvalidPluginDescriptorException
      */
-    public PluginDescriptor loadPlugin( Plugin plugin, List<RemoteRepository> repositories, RepositorySystemSession session )
-        throws PluginNotFoundException, PluginResolutionException, PluginDescriptorParsingException, InvalidPluginDescriptorException
+    public PluginDescriptor loadPlugin( Plugin plugin, List<RemoteRepository> repositories,
+                                        RepositorySystemSession session )
+        throws PluginNotFoundException, PluginResolutionException, PluginDescriptorParsingException,
+        InvalidPluginDescriptorException
     {
         return mavenPluginManager.getPluginDescriptor( plugin, repositories, session );
     }
@@ -187,7 +192,7 @@ public class DefaultBuildPluginManager
 
             ByteArrayOutputStream os = new ByteArrayOutputStream( 1024 );
             PrintStream ps = new PrintStream( os );
-            ps.println( "A type incompatibility occured while executing " + mojoDescriptor.getId() + ": "
+            ps.println( "A type incompatibility occurred while executing " + mojoDescriptor.getId() + ": "
                 + e.getMessage() );
             pluginRealm.display( ps );
 
@@ -215,9 +220,9 @@ public class DefaultBuildPluginManager
     /**
      * TODO pluginDescriptor classRealm and artifacts are set as a side effect of this
      *      call, which is not nice.
-     * @throws PluginResolutionException 
+     * @throws PluginResolutionException
      */
-    public ClassRealm getPluginRealm( MavenSession session, PluginDescriptor pluginDescriptor ) 
+    public ClassRealm getPluginRealm( MavenSession session, PluginDescriptor pluginDescriptor )
         throws PluginResolutionException, PluginManagerException
     {
         ClassRealm pluginRealm = pluginDescriptor.getClassRealm();

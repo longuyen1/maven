@@ -48,6 +48,7 @@ public class DefaultProfileActivationContext
 
     private File projectDirectory;
 
+    @Override
     public List<String> getActiveProfileIds()
     {
         return activeProfileIds;
@@ -73,6 +74,7 @@ public class DefaultProfileActivationContext
         return this;
     }
 
+    @Override
     public List<String> getInactiveProfileIds()
     {
         return inactiveProfileIds;
@@ -98,6 +100,7 @@ public class DefaultProfileActivationContext
         return this;
     }
 
+    @Override
     public Map<String, String> getSystemProperties()
     {
         return systemProperties;
@@ -146,6 +149,7 @@ public class DefaultProfileActivationContext
         return this;
     }
 
+    @Override
     public Map<String, String> getUserProperties()
     {
         return userProperties;
@@ -196,6 +200,7 @@ public class DefaultProfileActivationContext
         return this;
     }
 
+    @Override
     public File getProjectDirectory()
     {
         return projectDirectory;
@@ -215,6 +220,7 @@ public class DefaultProfileActivationContext
         return this;
     }
 
+    @Override
     public Map<String, String> getProjectProperties()
     {
         return projectProperties;
@@ -241,7 +247,7 @@ public class DefaultProfileActivationContext
         {
             return Collections.emptyMap();
         }
-        Map<String, String> map = new HashMap<String, String>();
+        Map<String, String> map = new HashMap<>();
         Enumeration keys = properties.keys();
         while ( keys.hasMoreElements() )
         {

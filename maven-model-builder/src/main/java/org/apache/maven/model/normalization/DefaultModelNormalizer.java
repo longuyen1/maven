@@ -25,6 +25,9 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import javax.inject.Named;
+import javax.inject.Singleton;
+
 import org.apache.maven.model.Build;
 import org.apache.maven.model.Dependency;
 import org.apache.maven.model.Model;
@@ -32,28 +35,29 @@ import org.apache.maven.model.Plugin;
 import org.apache.maven.model.building.ModelBuildingRequest;
 import org.apache.maven.model.building.ModelProblemCollector;
 import org.apache.maven.model.merge.MavenModelMerger;
-import org.codehaus.plexus.component.annotations.Component;
 import org.codehaus.plexus.util.StringUtils;
 
 /**
  * Handles normalization of a model.
- * 
+ *
  * @author Benjamin Bentmann
  */
-@Component( role = ModelNormalizer.class )
+@Named
+@Singleton
 public class DefaultModelNormalizer
     implements ModelNormalizer
 {
 
     private DuplicateMerger merger = new DuplicateMerger();
 
+    @Override
     public void mergeDuplicates( Model model, ModelBuildingRequest request, ModelProblemCollector problems )
     {
         Build build = model.getBuild();
         if ( build != null )
         {
             List<Plugin> plugins = build.getPlugins();
-            Map<Object, Plugin> normalized = new LinkedHashMap<Object, Plugin>( plugins.size() * 2 );
+            Map<Object, Plugin> normalized = new LinkedHashMap<>( plugins.size() * 2 );
 
             for ( Plugin plugin : plugins )
             {
@@ -68,7 +72,7 @@ public class DefaultModelNormalizer
 
             if ( plugins.size() != normalized.size() )
             {
-                build.setPlugins( new ArrayList<Plugin>( normalized.values() ) );
+                build.setPlugins( new ArrayList<>( normalized.values() ) );
             }
         }
 
@@ -80,7 +84,7 @@ public class DefaultModelNormalizer
          * aftereffects and bogus error messages.
          */
         List<Dependency> dependencies = model.getDependencies();
-        Map<String, Dependency> normalized = new LinkedHashMap<String, Dependency>( dependencies.size() * 2 );
+        Map<String, Dependency> normalized = new LinkedHashMap<>( dependencies.size() * 2 );
 
         for ( Dependency dependency : dependencies )
         {
@@ -89,10 +93,13 @@ public class DefaultModelNormalizer
 
         if ( dependencies.size() != normalized.size() )
         {
-            model.setDependencies( new ArrayList<Dependency>( normalized.values() ) );
+            model.setDependencies( new ArrayList<>( normalized.values() ) );
         }
     }
 
+    /**
+     * DuplicateMerger
+     */
     protected static class DuplicateMerger
         extends MavenModelMerger
     {
@@ -104,6 +111,7 @@ public class DefaultModelNormalizer
 
     }
 
+    @Override
     public void injectDefaultValues( Model model, ModelBuildingRequest request, ModelProblemCollector problems )
     {
         injectDependencyDefaults( model.getDependencies() );

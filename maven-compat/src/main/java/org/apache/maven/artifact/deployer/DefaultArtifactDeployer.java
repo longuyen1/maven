@@ -47,6 +47,9 @@ import org.eclipse.aether.metadata.MergeableMetadata;
 import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.util.artifact.SubArtifact;
 
+/**
+ * DefaultArtifactDeployer
+ */
 @Component( role = ArtifactDeployer.class, instantiationStrategy = "per-lookup" )
 public class DefaultArtifactDeployer
     extends AbstractLogEnabled
@@ -59,7 +62,7 @@ public class DefaultArtifactDeployer
     @Requirement
     private LegacySupport legacySupport;
 
-    private Map<Object, MergeableMetadata> relatedMetadata = new ConcurrentHashMap<Object, MergeableMetadata>();
+    private Map<Object, MergeableMetadata> relatedMetadata = new ConcurrentHashMap<>();
 
     /**
      * @deprecated we want to use the artifact method only, and ensure artifact.file is set

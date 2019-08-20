@@ -29,7 +29,7 @@ import org.codehaus.plexus.interpolation.ValueSource;
 
 /**
  * Wraps another value source and intercepts interpolated expressions, checking for problems.
- * 
+ *
  * @author Benjamin Bentmann
  */
 class ProblemDetectingValueSource
@@ -44,7 +44,7 @@ class ProblemDetectingValueSource
 
     private final ModelProblemCollector problems;
 
-    public ProblemDetectingValueSource( ValueSource valueSource, String bannedPrefix, String newPrefix,
+    ProblemDetectingValueSource( ValueSource valueSource, String bannedPrefix, String newPrefix,
                                         ModelProblemCollector problems )
     {
         this.valueSource = valueSource;
@@ -53,6 +53,7 @@ class ProblemDetectingValueSource
         this.problems = problems;
     }
 
+    @Override
     public Object getValue( String expression )
     {
         Object value = valueSource.getValue( expression );
@@ -70,12 +71,14 @@ class ProblemDetectingValueSource
         return value;
     }
 
+    @Override
     @SuppressWarnings( "unchecked" )
     public List getFeedback()
     {
         return valueSource.getFeedback();
     }
 
+    @Override
     public void clearFeedback()
     {
         valueSource.clearFeedback();

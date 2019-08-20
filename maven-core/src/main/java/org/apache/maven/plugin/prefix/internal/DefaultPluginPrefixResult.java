@@ -25,7 +25,7 @@ import org.eclipse.aether.repository.ArtifactRepository;
 
 /**
  * Describes the result of a plugin prefix resolution request.
- * 
+ *
  * @since 3.0
  * @author Benjamin Bentmann
  */
@@ -39,18 +39,18 @@ class DefaultPluginPrefixResult
 
     private ArtifactRepository repository;
 
-    public DefaultPluginPrefixResult()
+    DefaultPluginPrefixResult()
     {
         // does nothing
     }
 
-    public DefaultPluginPrefixResult( Plugin plugin )
+    DefaultPluginPrefixResult( Plugin plugin )
     {
         groupId = plugin.getGroupId();
         artifactId = plugin.getArtifactId();
     }
 
-    public DefaultPluginPrefixResult( String groupId, String artifactId, ArtifactRepository repository )
+    DefaultPluginPrefixResult( String groupId, String artifactId, ArtifactRepository repository )
     {
         this.groupId = groupId;
         this.artifactId = artifactId;

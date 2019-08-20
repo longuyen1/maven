@@ -34,18 +34,30 @@ import org.eclipse.aether.repository.RemoteRepository;
  * Caches plugin class realms. <strong>Warning:</strong> This is an internal utility interface that is only public for
  * technical reasons, it is not part of the public API. In particular, this interface can be changed or deleted without
  * prior notice.
- * 
+ *
  * @author Igor Fedorenko
  * @author Benjamin Bentmann
  */
 public interface PluginRealmCache
 {
-
-    static class CacheRecord
+    /**
+     * CacheRecord
+     */
+    class CacheRecord
     {
-        public final ClassRealm realm;
+        public ClassRealm getRealm()
+        {
+            return realm;
+        }
 
-        public final List<Artifact> artifacts;
+        public List<Artifact> getArtifacts()
+        {
+            return artifacts;
+        }
+
+        private final ClassRealm realm;
+
+        private final List<Artifact> artifacts;
 
         public CacheRecord( ClassRealm realm, List<Artifact> artifacts )
         {
@@ -76,7 +88,7 @@ public interface PluginRealmCache
      * Registers the specified cache record for usage with the given project. Integrators can use the information
      * collected from this method in combination with a custom cache implementation to dispose unused records from the
      * cache.
-     * 
+     *
      * @param project The project that employs the plugin realm, must not be {@code null}.
      * @param record The cache record being used for the project, must not be {@code null}.
      */

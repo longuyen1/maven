@@ -41,7 +41,7 @@ public interface MavenProjectHelper
      * * See {@link #attachArtifact(MavenProject, String, String, java.io.File)}, but with classifier set to null.
      * @param project project reference.
      * @param artifactType artifact type.
-     * @param artifactFile arrifact file.
+     * @param artifactFile artifact file.
      */
     void attachArtifact( MavenProject project, String artifactType, File artifactFile );
 
@@ -70,6 +70,7 @@ public interface MavenProjectHelper
      * @param includes include patterns.
      * @param excludes exclude patterns.
      */
-    void addTestResource( MavenProject project, String resourceDirectory, List<String> includes, List<String> excludes );
+    void addTestResource( MavenProject project, String resourceDirectory, List<String> includes,
+                          List<String> excludes );
 
 }

@@ -20,13 +20,16 @@ package org.apache.maven.bridge;
  */
 
 import java.io.File;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.maven.RepositoryUtils;
 import org.apache.maven.artifact.Artifact;
@@ -41,27 +44,19 @@ import org.apache.maven.artifact.repository.MavenArtifactRepository;
 import org.apache.maven.artifact.repository.layout.ArtifactRepositoryLayout;
 import org.apache.maven.artifact.repository.layout.ArtifactRepositoryLayout2;
 import org.apache.maven.artifact.repository.layout.DefaultRepositoryLayout;
-import org.apache.maven.artifact.resolver.filter.ExcludesArtifactFilter;
+import org.apache.maven.artifact.resolver.filter.ExclusionArtifactFilter;
 import org.apache.maven.artifact.versioning.InvalidVersionSpecificationException;
 import org.apache.maven.artifact.versioning.VersionRange;
+import org.apache.maven.execution.MavenExecutionRequest;
 import org.apache.maven.model.Dependency;
-import org.apache.maven.model.Exclusion;
 import org.apache.maven.model.Plugin;
 import org.apache.maven.repository.Proxy;
+import org.apache.maven.repository.RepositorySystem;
 import org.apache.maven.settings.Mirror;
-import org.apache.maven.settings.Server;
-import org.apache.maven.settings.building.SettingsProblem;
-import org.apache.maven.settings.crypto.DefaultSettingsDecryptionRequest;
-import org.apache.maven.settings.crypto.SettingsDecrypter;
-import org.apache.maven.settings.crypto.SettingsDecryptionRequest;
-import org.apache.maven.settings.crypto.SettingsDecryptionResult;
-import org.codehaus.plexus.PlexusContainer;
 import org.codehaus.plexus.component.annotations.Component;
 import org.codehaus.plexus.component.annotations.Requirement;
-import org.codehaus.plexus.logging.Logger;
 import org.codehaus.plexus.util.StringUtils;
 import org.eclipse.aether.RepositorySystemSession;
-import org.eclipse.aether.impl.ArtifactResolver;
 import org.eclipse.aether.repository.AuthenticationContext;
 import org.eclipse.aether.repository.AuthenticationSelector;
 import org.eclipse.aether.repository.ProxySelector;
@@ -73,40 +68,32 @@ import org.eclipse.aether.repository.RemoteRepository;
 @Component( role = MavenRepositorySystem.class, hint = "default" )
 public class MavenRepositorySystem
 {
-
-    @Requirement
-    private Logger logger;
-
     @Requirement
     private ArtifactHandlerManager artifactHandlerManager;
-    
-    @Requirement
-    private ArtifactResolver artifactResolver;
 
     @Requirement( role = ArtifactRepositoryLayout.class )
     private Map<String, ArtifactRepositoryLayout> layouts;
 
-    @Requirement
-    private PlexusContainer plexus;
-
-    @Requirement
-    private SettingsDecrypter settingsDecrypter;
-    
     // DefaultProjectBuilder
     public Artifact createArtifact( String groupId, String artifactId, String version, String scope, String type )
     {
-        return XcreateArtifact( groupId, artifactId, version, scope, type );
+        return createArtifactX( groupId, artifactId, version, scope, type );
     }
 
     // DefaultProjectBuilder
     public Artifact createProjectArtifact( String groupId, String artifactId, String metaVersionId )
     {
-        return XcreateProjectArtifact( groupId, artifactId, metaVersionId );
+        return createProjectArtifactX( groupId, artifactId, metaVersionId );
     }
 
     // DefaultProjectBuilder
     public Artifact createDependencyArtifact( Dependency d )
     {
+        if ( d.getVersion() == null )
+        {
+            return null;
+        }
+
         VersionRange versionRange;
         try
         {
@@ -118,7 +105,7 @@ public class MavenRepositorySystem
         }
 
         Artifact artifact =
-            XcreateDependencyArtifact( d.getGroupId(), d.getArtifactId(), versionRange, d.getType(),
+            createDependencyArtifactX( d.getGroupId(), d.getArtifactId(), versionRange, d.getType(),
                                                       d.getClassifier(), d.getScope(), d.isOptional() );
 
         if ( Artifact.SCOPE_SYSTEM.equals( d.getScope() ) && d.getSystemPath() != null )
@@ -128,14 +115,7 @@ public class MavenRepositorySystem
 
         if ( !d.getExclusions().isEmpty() )
         {
-            List<String> exclusions = new ArrayList<String>();
-
-            for ( Exclusion exclusion : d.getExclusions() )
-            {
-                exclusions.add( exclusion.getGroupId() + ':' + exclusion.getArtifactId() );
-            }
-
-            artifact.setDependencyFilter( new ExcludesArtifactFilter( exclusions ) );
+            artifact.setDependencyFilter( new ExclusionArtifactFilter( d.getExclusions() ) );
         }
 
         return artifact;
@@ -154,13 +134,13 @@ public class MavenRepositorySystem
             return null;
         }
 
-        return XcreateExtensionArtifact( groupId, artifactId, versionRange );
+        return createExtensionArtifactX( groupId, artifactId, versionRange );
     }
 
     // DefaultProjectBuilder
     public Artifact createParentArtifact( String groupId, String artifactId, String version )
     {
-        return XcreateParentArtifact( groupId, artifactId, version );
+        return createParentArtifactX( groupId, artifactId, version );
     }
 
     // DefaultProjectBuilder
@@ -181,100 +161,7 @@ public class MavenRepositorySystem
             return null;
         }
 
-        return XcreatePluginArtifact( plugin.getGroupId(), plugin.getArtifactId(), versionRange );
-    }
-
-    public List<ArtifactRepository> getEffectiveRepositories( List<ArtifactRepository> repositories )
-    {
-        if ( repositories == null )
-        {
-            return null;
-        }
-
-        Map<String, List<ArtifactRepository>> reposByKey = new LinkedHashMap<String, List<ArtifactRepository>>();
-
-        for ( ArtifactRepository repository : repositories )
-        {
-            String key = repository.getId();
-
-            List<ArtifactRepository> aliasedRepos = reposByKey.get( key );
-
-            if ( aliasedRepos == null )
-            {
-                aliasedRepos = new ArrayList<ArtifactRepository>();
-                reposByKey.put( key, aliasedRepos );
-            }
-
-            aliasedRepos.add( repository );
-        }
-
-        List<ArtifactRepository> effectiveRepositories = new ArrayList<ArtifactRepository>();
-
-        for ( List<ArtifactRepository> aliasedRepos : reposByKey.values() )
-        {
-            List<ArtifactRepository> mirroredRepos = new ArrayList<ArtifactRepository>();
-
-            List<ArtifactRepositoryPolicy> releasePolicies =
-                new ArrayList<ArtifactRepositoryPolicy>( aliasedRepos.size() );
-
-            for ( ArtifactRepository aliasedRepo : aliasedRepos )
-            {
-                releasePolicies.add( aliasedRepo.getReleases() );
-                mirroredRepos.addAll( aliasedRepo.getMirroredRepositories() );
-            }
-
-            ArtifactRepositoryPolicy releasePolicy = getEffectivePolicy( releasePolicies );
-
-            List<ArtifactRepositoryPolicy> snapshotPolicies =
-                new ArrayList<ArtifactRepositoryPolicy>( aliasedRepos.size() );
-
-            for ( ArtifactRepository aliasedRepo : aliasedRepos )
-            {
-                snapshotPolicies.add( aliasedRepo.getSnapshots() );
-            }
-
-            ArtifactRepositoryPolicy snapshotPolicy = getEffectivePolicy( snapshotPolicies );
-
-            ArtifactRepository aliasedRepo = aliasedRepos.get( 0 );
-
-            ArtifactRepository effectiveRepository =
-                createArtifactRepository( aliasedRepo.getId(), aliasedRepo.getUrl(), aliasedRepo.getLayout(),
-                                          snapshotPolicy, releasePolicy );
-
-            effectiveRepository.setAuthentication( aliasedRepo.getAuthentication() );
-
-            effectiveRepository.setProxy( aliasedRepo.getProxy() );
-
-            effectiveRepository.setMirroredRepositories( mirroredRepos );
-
-            effectiveRepositories.add( effectiveRepository );
-        }
-
-        return effectiveRepositories;
-    }
-
-    private ArtifactRepositoryPolicy getEffectivePolicy( Collection<ArtifactRepositoryPolicy> policies )
-    {
-        ArtifactRepositoryPolicy effectivePolicy = null;
-
-        for ( ArtifactRepositoryPolicy policy : policies )
-        {
-            if ( effectivePolicy == null )
-            {
-                effectivePolicy = new ArtifactRepositoryPolicy( policy );
-            }
-            else
-            {
-                effectivePolicy.merge( policy );
-            }
-        }
-
-        return effectivePolicy;
-    }
-
-    public Mirror getMirror( ArtifactRepository repository, List<Mirror> mirrors )
-    {
-        return MirrorSelector.getMirror( repository, mirrors );
+        return createPluginArtifactX( plugin.getGroupId(), plugin.getArtifactId(), versionRange );
     }
 
     public void injectMirror( List<ArtifactRepository> repositories, List<Mirror> mirrors )
@@ -338,55 +225,6 @@ public class MavenRepositorySystem
             if ( StringUtils.isNotEmpty( mirror.getLayout() ) )
             {
                 repository.setLayout( getLayout( mirror.getLayout() ) );
-            }
-        }
-    }
-
-    public void injectAuthentication( List<ArtifactRepository> repositories, List<Server> servers )
-    {
-        if ( repositories != null )
-        {
-            Map<String, Server> serversById = new HashMap<String, Server>();
-
-            if ( servers != null )
-            {
-                for ( Server server : servers )
-                {
-                    if ( !serversById.containsKey( server.getId() ) )
-                    {
-                        serversById.put( server.getId(), server );
-                    }
-                }
-            }
-
-            for ( ArtifactRepository repository : repositories )
-            {
-                Server server = serversById.get( repository.getId() );
-
-                if ( server != null )
-                {
-                    SettingsDecryptionRequest request = new DefaultSettingsDecryptionRequest( server );
-                    SettingsDecryptionResult result = settingsDecrypter.decrypt( request );
-                    server = result.getServer();
-
-                    if ( logger.isDebugEnabled() )
-                    {
-                        for ( SettingsProblem problem : result.getProblems() )
-                        {
-                            logger.debug( problem.getMessage(), problem.getException() );
-                        }
-                    }
-
-                    Authentication authentication = new Authentication( server.getUsername(), server.getPassword() );
-                    authentication.setPrivateKey( server.getPrivateKey() );
-                    authentication.setPassphrase( server.getPassphrase() );
-
-                    repository.setAuthentication( authentication );
-                }
-                else
-                {
-                    repository.setAuthentication( null );
-                }
             }
         }
     }
@@ -483,7 +321,8 @@ public class MavenRepositorySystem
     // Taken from LegacyRepositorySystem
     //
 
-    public static org.apache.maven.model.Repository fromSettingsRepository( org.apache.maven.settings.Repository settingsRepository )
+    public static org.apache.maven.model.Repository fromSettingsRepository( org.apache.maven.settings.Repository
+                                                                            settingsRepository )
     {
         org.apache.maven.model.Repository modelRepository = new org.apache.maven.model.Repository();
         modelRepository.setId( settingsRepository.getId() );
@@ -495,7 +334,8 @@ public class MavenRepositorySystem
         return modelRepository;
     }
 
-    public static org.apache.maven.model.RepositoryPolicy fromSettingsRepositoryPolicy( org.apache.maven.settings.RepositoryPolicy settingsRepositoryPolicy )
+    public static org.apache.maven.model.RepositoryPolicy fromSettingsRepositoryPolicy(
+                                                 org.apache.maven.settings.RepositoryPolicy settingsRepositoryPolicy )
     {
         org.apache.maven.model.RepositoryPolicy modelRepositoryPolicy = new org.apache.maven.model.RepositoryPolicy();
         if ( settingsRepositoryPolicy != null )
@@ -546,7 +386,8 @@ public class MavenRepositorySystem
         }
     }
 
-    public static ArtifactRepositoryPolicy buildArtifactRepositoryPolicy( org.apache.maven.model.RepositoryPolicy policy )
+    public static ArtifactRepositoryPolicy buildArtifactRepositoryPolicy( org.apache.maven.model.RepositoryPolicy
+                                                                          policy )
     {
         boolean enabled = true;
 
@@ -569,8 +410,30 @@ public class MavenRepositorySystem
         }
 
         return new ArtifactRepositoryPolicy( enabled, updatePolicy, checksumPolicy );
+    }    
+    
+    public ArtifactRepository createArtifactRepository( String id, String url, String layoutId,
+                                                        ArtifactRepositoryPolicy snapshots,
+                                                        ArtifactRepositoryPolicy releases )
+        throws Exception
+    {
+        ArtifactRepositoryLayout layout = layouts.get( layoutId );
+
+        checkLayout( id, layoutId, layout );
+
+        return createArtifactRepository( id, url, layout, snapshots, releases );
     }
 
+    private void checkLayout( String repositoryId, String layoutId, ArtifactRepositoryLayout layout )
+        throws Exception
+    {
+        if ( layout == null )
+        {
+            throw new Exception( String.format( "Cannot find ArtifactRepositoryLayout instance for: %s %s", layoutId,
+                                                repositoryId ) );
+        }
+    }
+    
     public static ArtifactRepository createArtifactRepository( String id, String url,
                                                         ArtifactRepositoryLayout repositoryLayout,
                                                         ArtifactRepositoryPolicy snapshots,
@@ -600,45 +463,45 @@ public class MavenRepositorySystem
 
         return repository;
     }
-    
+
     // ArtifactFactory
-    private Artifact XcreateArtifact( String groupId, String artifactId, String version, String scope, String type )
+    private Artifact createArtifactX( String groupId, String artifactId, String version, String scope, String type )
     {
-        return XcreateArtifact( groupId, artifactId, version, scope, type, null, null );
+        return createArtifactX( groupId, artifactId, version, scope, type, null, null );
     }
 
-    private Artifact XcreateDependencyArtifact( String groupId, String artifactId, VersionRange versionRange,
-                                              String type, String classifier, String scope, boolean optional )
+    private Artifact createDependencyArtifactX( String groupId, String artifactId, VersionRange versionRange,
+                                               String type, String classifier, String scope, boolean optional )
     {
-        return XcreateArtifact( groupId, artifactId, versionRange, type, classifier, scope, null, optional );
+        return createArtifactX( groupId, artifactId, versionRange, type, classifier, scope, null, optional );
     }
 
-    private Artifact XcreateProjectArtifact( String groupId, String artifactId, String version )
+    private Artifact createProjectArtifactX( String groupId, String artifactId, String version )
     {
-        return XcreateProjectArtifact( groupId, artifactId, version, null );
+        return createProjectArtifactX( groupId, artifactId, version, null );
     }
 
-    private Artifact XcreateParentArtifact( String groupId, String artifactId, String version )
+    private Artifact createParentArtifactX( String groupId, String artifactId, String version )
     {
-        return XcreateProjectArtifact( groupId, artifactId, version );
+        return createProjectArtifactX( groupId, artifactId, version );
     }
 
-    private Artifact XcreatePluginArtifact( String groupId, String artifactId, VersionRange versionRange )
+    private Artifact createPluginArtifactX( String groupId, String artifactId, VersionRange versionRange )
     {
-        return XcreateArtifact( groupId, artifactId, versionRange, "maven-plugin", null, Artifact.SCOPE_RUNTIME, null );
+        return createArtifactX( groupId, artifactId, versionRange, "maven-plugin", null, Artifact.SCOPE_RUNTIME, null );
     }
 
-    private Artifact XcreateProjectArtifact( String groupId, String artifactId, String version, String scope )
+    private Artifact createProjectArtifactX( String groupId, String artifactId, String version, String scope )
     {
-        return XcreateArtifact( groupId, artifactId, version, scope, "pom" );
+        return createArtifactX( groupId, artifactId, version, scope, "pom" );
     }
 
-    private Artifact XcreateExtensionArtifact( String groupId, String artifactId, VersionRange versionRange )
+    private Artifact createExtensionArtifactX( String groupId, String artifactId, VersionRange versionRange )
     {
-        return XcreateArtifact( groupId, artifactId, versionRange, "jar", null, Artifact.SCOPE_RUNTIME, null );
+        return createArtifactX( groupId, artifactId, versionRange, "jar", null, Artifact.SCOPE_RUNTIME, null );
     }
 
-    private Artifact XcreateArtifact( String groupId, String artifactId, String version, String scope, String type,
+    private Artifact createArtifactX( String groupId, String artifactId, String version, String scope, String type,
                                      String classifier, String inheritedScope )
     {
         VersionRange versionRange = null;
@@ -646,16 +509,17 @@ public class MavenRepositorySystem
         {
             versionRange = VersionRange.createFromVersion( version );
         }
-        return XcreateArtifact( groupId, artifactId, versionRange, type, classifier, scope, inheritedScope );
+        return createArtifactX( groupId, artifactId, versionRange, type, classifier, scope, inheritedScope );
     }
 
-    private Artifact XcreateArtifact( String groupId, String artifactId, VersionRange versionRange, String type,
+    private Artifact createArtifactX( String groupId, String artifactId, VersionRange versionRange, String type,
                                      String classifier, String scope, String inheritedScope )
     {
-        return XcreateArtifact( groupId, artifactId, versionRange, type, classifier, scope, inheritedScope, false );
+        return createArtifactX( groupId, artifactId, versionRange, type, classifier, scope, inheritedScope, false );
     }
 
-    private Artifact XcreateArtifact( String groupId, String artifactId, VersionRange versionRange, String type,
+    @SuppressWarnings( "checkstyle:parameternumber" )
+    private Artifact createArtifactX( String groupId, String artifactId, VersionRange versionRange, String type,
                                      String classifier, String scope, String inheritedScope, boolean optional )
     {
         String desiredScope = Artifact.SCOPE_RUNTIME;
@@ -694,5 +558,317 @@ public class MavenRepositorySystem
 
         return new DefaultArtifact( groupId, artifactId, versionRange, desiredScope, type, classifier, handler,
                                     optional );
+    }
+    
+    //
+    // Code taken from LegacyRepositorySystem
+    //
+        
+    public ArtifactRepository createDefaultRemoteRepository( MavenExecutionRequest request )
+        throws Exception
+    {
+        return createRepository( RepositorySystem.DEFAULT_REMOTE_REPO_URL, RepositorySystem.DEFAULT_REMOTE_REPO_ID,
+                                 true, ArtifactRepositoryPolicy.UPDATE_POLICY_DAILY, false,
+                                 ArtifactRepositoryPolicy.UPDATE_POLICY_DAILY,
+                                 ArtifactRepositoryPolicy.CHECKSUM_POLICY_WARN );
+    }
+    
+    public ArtifactRepository createRepository( String url, String repositoryId, boolean releases,
+                                                 String releaseUpdates, boolean snapshots, String snapshotUpdates,
+                                                 String checksumPolicy ) throws Exception
+    {
+        ArtifactRepositoryPolicy snapshotsPolicy =
+            new ArtifactRepositoryPolicy( snapshots, snapshotUpdates, checksumPolicy );
+
+        ArtifactRepositoryPolicy releasesPolicy =
+            new ArtifactRepositoryPolicy( releases, releaseUpdates, checksumPolicy );
+
+        return createArtifactRepository( repositoryId, url, "default", snapshotsPolicy, releasesPolicy );
+    }
+        
+    public Set<String> getRepoIds( List<ArtifactRepository> repositories )
+    {
+        Set<String> repoIds = new HashSet<>();
+
+        if ( repositories != null )
+        {
+            for ( ArtifactRepository repository : repositories )
+            {
+                repoIds.add( repository.getId() );
+            }
+        }
+
+        return repoIds;
+    }
+
+    /**
+     * Source from org.apache.maven.repository.legacy.LegacyRepositorySystem#getEffectiveRepositories
+     *
+     * @param repositories
+     * @return
+     * @since 3.6.1
+     */
+    public List<ArtifactRepository> getEffectiveRepositories( List<ArtifactRepository> repositories )
+    {
+        if ( repositories == null )
+        {
+            return null;
+        }
+
+        Map<String, List<ArtifactRepository>> reposByKey = new LinkedHashMap<>();
+
+        for ( ArtifactRepository repository : repositories )
+        {
+            String key = repository.getId();
+
+            List<ArtifactRepository> aliasedRepos = reposByKey.get( key );
+
+            if ( aliasedRepos == null )
+            {
+                aliasedRepos = new ArrayList<>();
+                reposByKey.put( key, aliasedRepos );
+            }
+
+            aliasedRepos.add( repository );
+        }
+
+        List<ArtifactRepository> effectiveRepositories = new ArrayList<>();
+
+        for ( List<ArtifactRepository> aliasedRepos : reposByKey.values() )
+        {
+            List<ArtifactRepository> mirroredRepos = new ArrayList<>();
+
+            List<ArtifactRepositoryPolicy> releasePolicies =
+                    new ArrayList<>( aliasedRepos.size() );
+
+            for ( ArtifactRepository aliasedRepo : aliasedRepos )
+            {
+                releasePolicies.add( aliasedRepo.getReleases() );
+                mirroredRepos.addAll( aliasedRepo.getMirroredRepositories() );
+            }
+
+            ArtifactRepositoryPolicy releasePolicy = getEffectivePolicy( releasePolicies );
+
+            List<ArtifactRepositoryPolicy> snapshotPolicies =
+                    new ArrayList<>( aliasedRepos.size() );
+
+            for ( ArtifactRepository aliasedRepo : aliasedRepos )
+            {
+                snapshotPolicies.add( aliasedRepo.getSnapshots() );
+            }
+
+            ArtifactRepositoryPolicy snapshotPolicy = getEffectivePolicy( snapshotPolicies );
+
+            ArtifactRepository aliasedRepo = aliasedRepos.get( 0 );
+
+            ArtifactRepository effectiveRepository =
+                    createArtifactRepository( aliasedRepo.getId(), aliasedRepo.getUrl(), aliasedRepo.getLayout(),
+                            snapshotPolicy, releasePolicy );
+
+            effectiveRepository.setAuthentication( aliasedRepo.getAuthentication() );
+
+            effectiveRepository.setProxy( aliasedRepo.getProxy() );
+
+            effectiveRepository.setMirroredRepositories( mirroredRepos );
+
+            effectiveRepositories.add( effectiveRepository );
+        }
+
+        return effectiveRepositories;
+    }
+
+    private ArtifactRepositoryPolicy getEffectivePolicy( Collection<ArtifactRepositoryPolicy> policies )
+    {
+        ArtifactRepositoryPolicy effectivePolicy = null;
+
+        for ( ArtifactRepositoryPolicy policy : policies )
+        {
+            if ( effectivePolicy == null )
+            {
+                effectivePolicy = new ArtifactRepositoryPolicy( policy );
+            }
+            else
+            {
+                effectivePolicy.merge( policy );
+            }
+        }
+
+        return effectivePolicy;
+    }
+
+    public ArtifactRepository createLocalRepository( MavenExecutionRequest request, File localRepository )
+        throws Exception
+    {
+        return createRepository( "file://" + localRepository.toURI().getRawPath(),
+                                 RepositorySystem.DEFAULT_LOCAL_REPO_ID, true,
+                                 ArtifactRepositoryPolicy.UPDATE_POLICY_ALWAYS, true,
+                                 ArtifactRepositoryPolicy.UPDATE_POLICY_ALWAYS,
+                                 ArtifactRepositoryPolicy.CHECKSUM_POLICY_IGNORE );
+    }    
+    
+    private static final String WILDCARD = "*";
+
+    private static final String EXTERNAL_WILDCARD = "external:*";
+
+    public static Mirror getMirror( ArtifactRepository repository, List<Mirror> mirrors )
+    {
+        String repoId = repository.getId();
+
+        if ( repoId != null && mirrors != null )
+        {
+            for ( Mirror mirror : mirrors )
+            {
+                if ( repoId.equals( mirror.getMirrorOf() ) && matchesLayout( repository, mirror ) )
+                {
+                    return mirror;
+                }
+            }
+
+            for ( Mirror mirror : mirrors )
+            {
+                if ( matchPattern( repository, mirror.getMirrorOf() ) && matchesLayout( repository, mirror ) )
+                {
+                    return mirror;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * This method checks if the pattern matches the originalRepository. Valid patterns: * = everything external:* =
+     * everything not on the localhost and not file based. repo,repo1 = repo or repo1 *,!repo1 = everything except repo1
+     *
+     * @param originalRepository to compare for a match.
+     * @param pattern used for match. Currently only '*' is supported.
+     * @return true if the repository is a match to this pattern.
+     */
+    static boolean matchPattern( ArtifactRepository originalRepository, String pattern )
+    {
+        boolean result = false;
+        String originalId = originalRepository.getId();
+
+        // simple checks first to short circuit processing below.
+        if ( WILDCARD.equals( pattern ) || pattern.equals( originalId ) )
+        {
+            result = true;
+        }
+        else
+        {
+            // process the list
+            String[] repos = pattern.split( "," );
+            for ( String repo : repos )
+            {
+                // see if this is a negative match
+                if ( repo.length() > 1 && repo.startsWith( "!" ) )
+                {
+                    if ( repo.substring( 1 ).equals( originalId ) )
+                    {
+                        // explicitly exclude. Set result and stop processing.
+                        result = false;
+                        break;
+                    }
+                }
+                // check for exact match
+                else if ( repo.equals( originalId ) )
+                {
+                    result = true;
+                    break;
+                }
+                // check for external:*
+                else if ( EXTERNAL_WILDCARD.equals( repo ) && isExternalRepo( originalRepository ) )
+                {
+                    result = true;
+                    // don't stop processing in case a future segment explicitly excludes this repo
+                }
+                else if ( WILDCARD.equals( repo ) )
+                {
+                    result = true;
+                    // don't stop processing in case a future segment explicitly excludes this repo
+                }
+            }
+        }
+        return result;
+    }
+
+    /**
+     * Checks the URL to see if this repository refers to an external repository
+     *
+     * @param originalRepository
+     * @return true if external.
+     */
+    static boolean isExternalRepo( ArtifactRepository originalRepository )
+    {
+        try
+        {
+            URL url = new URL( originalRepository.getUrl() );
+            return !( url.getHost().equals( "localhost" ) || url.getHost().equals( "127.0.0.1" )
+                            || url.getProtocol().equals( "file" ) );
+        }
+        catch ( MalformedURLException e )
+        {
+            // bad url just skip it here. It should have been validated already, but the wagon lookup will deal with it
+            return false;
+        }
+    }
+
+    static boolean matchesLayout( ArtifactRepository repository, Mirror mirror )
+    {
+        return matchesLayout( RepositoryUtils.getLayout( repository ), mirror.getMirrorOfLayouts() );
+    }
+
+    /**
+     * Checks whether the layouts configured for a mirror match with the layout of the repository.
+     *
+     * @param repoLayout The layout of the repository, may be {@code null}.
+     * @param mirrorLayout The layouts supported by the mirror, may be {@code null}.
+     * @return {@code true} if the layouts associated with the mirror match the layout of the original repository,
+     *         {@code false} otherwise.
+     */
+    static boolean matchesLayout( String repoLayout, String mirrorLayout )
+    {
+        boolean result = false;
+
+        // simple checks first to short circuit processing below.
+        if ( StringUtils.isEmpty( mirrorLayout ) || WILDCARD.equals( mirrorLayout ) )
+        {
+            result = true;
+        }
+        else if ( mirrorLayout.equals( repoLayout ) )
+        {
+            result = true;
+        }
+        else
+        {
+            // process the list
+            String[] layouts = mirrorLayout.split( "," );
+            for ( String layout : layouts )
+            {
+                // see if this is a negative match
+                if ( layout.length() > 1 && layout.startsWith( "!" ) )
+                {
+                    if ( layout.substring( 1 ).equals( repoLayout ) )
+                    {
+                        // explicitly exclude. Set result and stop processing.
+                        result = false;
+                        break;
+                    }
+                }
+                // check for exact match
+                else if ( layout.equals( repoLayout ) )
+                {
+                    result = true;
+                    break;
+                }
+                else if ( WILDCARD.equals( layout ) )
+                {
+                    result = true;
+                    // don't stop processing in case a future segment explicitly excludes this repo
+                }
+            }
+        }
+
+        return result;
     }    
 }

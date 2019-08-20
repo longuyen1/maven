@@ -20,22 +20,27 @@ package org.apache.maven.toolchain;
  */
 
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
+import java.util.Properties;
 
 import org.apache.maven.toolchain.model.ToolchainModel;
 import org.codehaus.plexus.logging.Logger;
 
 /**
+ * Default abstract toolchain implementation, to be used as base class for any toolchain implementation
+ * to avoid rewriting usual code.
  *
  * @author mkleint
+ * @since 2.0.9
  */
-public abstract class DefaultToolchain
+public abstract class DefaultToolchain // should have been AbstractToolchain...
     implements Toolchain, ToolchainPrivate
 {
 
     private String type;
 
-    private Map<String, RequirementMatcher> provides = new HashMap<String, RequirementMatcher>();
+    private Map<String, RequirementMatcher> provides = new HashMap<>();
 
     public static final String KEY_TYPE = "type"; //NOI18N
 
@@ -43,6 +48,11 @@ public abstract class DefaultToolchain
 
     private Logger logger;
 
+    /**
+     * 
+     * @param model the model, must not be {@code null}
+     * @param logger the logger, must not be {@code null}
+     */
     protected DefaultToolchain( ToolchainModel model, Logger logger )
     {
         this.model = model;
@@ -50,18 +60,25 @@ public abstract class DefaultToolchain
         this.logger = logger;
     }
 
+    /**
+     * 
+     * @param model the model, must not be {@code null}
+     * @param type the type
+     * @param logger the logger, must not be {@code null}
+     */
     protected DefaultToolchain( ToolchainModel model, String type, Logger logger )
     {
         this( model, logger );
         this.type = type;
     }
 
+    @Override
     public final String getType()
     {
         return type != null ? type : model.getType();
     }
 
-
+    @Override
     public final ToolchainModel getModel()
     {
         return model;
@@ -72,7 +89,7 @@ public abstract class DefaultToolchain
         provides.put( type, matcher );
     }
 
-
+    @Override
     public boolean matchesRequirements( Map<String, String> requirements )
     {
         for ( Map.Entry<String, String> requirement : requirements.entrySet() )
@@ -98,5 +115,76 @@ public abstract class DefaultToolchain
     protected Logger getLog()
     {
         return logger;
+    }
+
+    @Override
+    public boolean equals( Object obj )
+    {
+        if ( obj == null )
+        {
+            return false;
+        }
+
+        if ( this == obj )
+        {
+            return true;
+        }
+
+        if ( !( obj instanceof DefaultToolchain ) )
+        {
+            return false;
+        }
+
+        DefaultToolchain other = (DefaultToolchain) obj;
+
+        if ( type == null ? other.type != null : !type.equals( other.type ) )
+        {
+            return false;
+        }
+
+        Properties thisProvides = this.getModel().getProvides();
+        Properties otherProvides = other.getModel().getProvides();
+
+        if ( thisProvides == null ? otherProvides != null : !thisProvides.equals( otherProvides ) )
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    @Override
+    public int hashCode()
+    {
+        int hashCode = ( type == null ) ? 0 : type.hashCode();
+
+        if ( this.getModel().getProvides() != null )
+        {
+            hashCode = 31 * hashCode + this.getModel().getProvides().hashCode();
+        }
+        return hashCode;
+    }
+    
+    @Override
+    public String toString()
+    {
+        StringBuilder builder = new StringBuilder();
+        builder.append( "type:" ).append( getType() );
+        builder.append( '{' );
+
+        Iterator<Map.Entry<String, RequirementMatcher>> providesIter = provides.entrySet().iterator();
+        while ( providesIter.hasNext() )
+        {
+            Map.Entry<String, RequirementMatcher> provideEntry = providesIter.next();
+            builder.append( provideEntry.getKey() ).append( " = " ).append( provideEntry.getValue() );
+            if ( providesIter.hasNext() )
+            {
+                builder.append( ';' );
+            }
+        }
+        
+        builder.append( '}' );
+        
+        return builder.toString();
     }
 }

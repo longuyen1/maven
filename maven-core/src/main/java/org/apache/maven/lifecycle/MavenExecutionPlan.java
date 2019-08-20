@@ -34,14 +34,17 @@ import org.apache.maven.model.Plugin;
 import org.apache.maven.plugin.MojoExecution;
 import org.apache.maven.plugin.descriptor.MojoDescriptor;
 
-//TODO: lifecycles being executed
-//TODO: what runs in each phase
-//TODO: plugins that need downloading
-//TODO: project dependencies that need downloading
-//TODO: unfortunately the plugins need to be downloaded in order to get the plugin.xml file. need to externalize this
+//TODO lifecycles being executed
+//TODO what runs in each phase
+//TODO plugins that need downloading
+//TODO project dependencies that need downloading
+//TODO unfortunately the plugins need to be downloaded in order to get the plugin.xml file. need to externalize this
 //      from the plugin archive.
-//TODO: this will be the class that people get in IDEs to modify
+//TODO this will be the class that people get in IDEs to modify
 
+/**
+ * MavenExecutionPlan
+ */
 public class MavenExecutionPlan
     implements Iterable<ExecutionPlanItem>
 {
@@ -65,9 +68,9 @@ public class MavenExecutionPlan
     {
         this.planItem = planItem;
 
-        lastMojoExecutionForAllPhases = new LinkedHashMap<String, ExecutionPlanItem>();
+        lastMojoExecutionForAllPhases = new LinkedHashMap<>();
 
-        LinkedHashSet<String> totalPhaseSet = new LinkedHashSet<String>();
+        LinkedHashSet<String> totalPhaseSet = new LinkedHashSet<>();
         if ( defaultLifecycles != null )
         {
             for ( String phase : getDistinctPhasesInOrderOfExecutionPlanAppearance( planItem ) )
@@ -79,9 +82,9 @@ public class MavenExecutionPlan
                 }
             }
         }
-        this.phasesInExecutionPlan = new ArrayList<String>( totalPhaseSet );
+        this.phasesInExecutionPlan = new ArrayList<>( totalPhaseSet );
 
-        Map<String, ExecutionPlanItem> lastInExistingPhases = new HashMap<String, ExecutionPlanItem>();
+        Map<String, ExecutionPlanItem> lastInExistingPhases = new HashMap<>();
         for ( ExecutionPlanItem executionPlanItem : getExecutionPlanItems() )
         {
             lastInExistingPhases.put( executionPlanItem.getLifecyclePhase(), executionPlanItem );
@@ -127,7 +130,7 @@ public class MavenExecutionPlan
     private static Iterable<String> getDistinctPhasesInOrderOfExecutionPlanAppearance(
         List<ExecutionPlanItem> planItems )
     {
-        LinkedHashSet<String> result = new LinkedHashSet<String>();
+        LinkedHashSet<String> result = new LinkedHashSet<>();
         for ( ExecutionPlanItem executionPlanItem : planItems )
         {
             final String phase = executionPlanItem.getLifecyclePhase();
@@ -141,7 +144,7 @@ public class MavenExecutionPlan
 
     public List<MojoExecution> getMojoExecutions()
     {
-        List<MojoExecution> result = new ArrayList<MojoExecution>();
+        List<MojoExecution> result = new ArrayList<>();
         for ( ExecutionPlanItem executionPlanItem : planItem )
         {
             result.add( executionPlanItem.getMojoExecution() );
@@ -156,7 +159,7 @@ public class MavenExecutionPlan
      */
     public Set<Plugin> getNonThreadSafePlugins()
     {
-        Set<Plugin> plugins = new HashSet<Plugin>();
+        Set<Plugin> plugins = new HashSet<>();
         for ( ExecutionPlanItem executionPlanItem : planItem )
         {
             final MojoExecution mojoExecution = executionPlanItem.getMojoExecution();
@@ -175,7 +178,7 @@ public class MavenExecutionPlan
      */
     public Set<MojoDescriptor> getNonThreadSafeMojos()
     {
-        Set<MojoDescriptor> mojos = new HashSet<MojoDescriptor>();
+        Set<MojoDescriptor> mojos = new HashSet<>();
         for ( ExecutionPlanItem executionPlanItem : planItem )
         {
             final MojoExecution mojoExecution = executionPlanItem.getMojoExecution();

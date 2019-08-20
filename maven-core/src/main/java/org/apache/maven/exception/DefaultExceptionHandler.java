@@ -80,8 +80,12 @@ Plugins:
 
  */
 
-//PluginNotFoundException, PluginResolutionException, PluginDescriptorParsingException, CycleDetectedInPluginGraphException;
+// PluginNotFoundException, PluginResolutionException, PluginDescriptorParsingException,
+// CycleDetectedInPluginGraphException;
 
+/**
+ * Transform an exception into useful end-user message.
+ */
 @Component( role = ExceptionHandler.class )
 public class DefaultExceptionHandler
     implements ExceptionHandler
@@ -102,7 +106,7 @@ public class DefaultExceptionHandler
         {
             List<ProjectBuildingResult> results = ( (ProjectBuildingException) exception ).getResults();
 
-            children = new ArrayList<ExceptionSummary>();
+            children = new ArrayList<>();
 
             for ( ProjectBuildingResult result : results )
             {
@@ -125,7 +129,7 @@ public class DefaultExceptionHandler
 
     private ExceptionSummary handle( ProjectBuildingResult result )
     {
-        List<ExceptionSummary> children = new ArrayList<ExceptionSummary>();
+        List<ExceptionSummary> children = new ArrayList<>();
 
         for ( ModelProblem problem : result.getProblems() )
         {
@@ -205,10 +209,13 @@ public class DefaultExceptionHandler
                 {
                     Throwable cause2 = cause.getCause();
 
-                    if ( cause2 instanceof NoClassDefFoundError
-                        && cause2.getMessage().contains( "org/sonatype/aether/" ) )
+                    if ( cause2 instanceof NoClassDefFoundError )
                     {
-                        reference = "AetherClassNotFound";
+                        String message = cause2.getMessage();
+                        if ( message != null && message.contains( "org/sonatype/aether/" ) )
+                        {
+                            reference = "AetherClassNotFound";
+                        }
                     }
                 }
 

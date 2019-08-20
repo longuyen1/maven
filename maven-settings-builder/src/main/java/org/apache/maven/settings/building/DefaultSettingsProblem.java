@@ -23,7 +23,7 @@ package org.apache.maven.settings.building;
  * Describes a problem that was encountered during settings building. A problem can either be an exception that was
  * thrown or a simple string message. In addition, a problem carries a hint about its source, e.g. the settings file
  * that exhibits the problem.
- * 
+ *
  * @author Benjamin Bentmann
  */
 public class DefaultSettingsProblem
@@ -44,7 +44,7 @@ public class DefaultSettingsProblem
 
     /**
      * Creates a new problem with the specified message and exception.
-     * 
+     *
      * @param message The message describing the problem, may be {@code null}.
      * @param severity The severity level of the problem, may be {@code null} to default to
      *            {@link SettingsProblem.Severity#ERROR}.
@@ -64,21 +64,25 @@ public class DefaultSettingsProblem
         this.exception = exception;
     }
 
+    @Override
     public String getSource()
     {
         return source;
     }
 
+    @Override
     public int getLineNumber()
     {
         return lineNumber;
     }
 
+    @Override
     public int getColumnNumber()
     {
         return columnNumber;
     }
 
+    @Override
     public String getLocation()
     {
         StringBuilder buffer = new StringBuilder( 256 );
@@ -113,11 +117,13 @@ public class DefaultSettingsProblem
         return buffer.toString();
     }
 
+    @Override
     public Exception getException()
     {
         return exception;
     }
 
+    @Override
     public String getMessage()
     {
         String msg;
@@ -139,6 +145,7 @@ public class DefaultSettingsProblem
         return msg;
     }
 
+    @Override
     public Severity getSeverity()
     {
         return severity;
@@ -149,7 +156,7 @@ public class DefaultSettingsProblem
     {
         StringBuilder buffer = new StringBuilder( 128 );
 
-        buffer.append( "[" ).append( getSeverity() ).append( "] " );
+        buffer.append( '[' ).append( getSeverity() ).append( "] " );
         buffer.append( getMessage() );
         buffer.append( " @ " ).append( getLocation() );
 

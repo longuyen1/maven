@@ -23,13 +23,14 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import org.apache.maven.model.Model;
 import org.apache.maven.model.Profile;
 
 /**
  * Collects the output of the model builder.
- * 
+ *
  * @author Benjamin Bentmann
  */
 class DefaultModelBuildingResult
@@ -48,15 +49,16 @@ class DefaultModelBuildingResult
 
     private List<ModelProblem> problems;
 
-    public DefaultModelBuildingResult()
+    DefaultModelBuildingResult()
     {
-        modelIds = new ArrayList<String>();
-        rawModels = new HashMap<String, Model>();
-        activePomProfiles = new HashMap<String, List<Profile>>();
-        activeExternalProfiles = new ArrayList<Profile>();
-        problems = new ArrayList<ModelProblem>();
+        modelIds = new ArrayList<>();
+        rawModels = new HashMap<>();
+        activePomProfiles = new HashMap<>();
+        activeExternalProfiles = new ArrayList<>();
+        problems = new ArrayList<>();
     }
 
+    @Override
     public Model getEffectiveModel()
     {
         return effectiveModel;
@@ -69,6 +71,7 @@ class DefaultModelBuildingResult
         return this;
     }
 
+    @Override
     public List<String> getModelIds()
     {
         return modelIds;
@@ -76,21 +79,21 @@ class DefaultModelBuildingResult
 
     public DefaultModelBuildingResult addModelId( String modelId )
     {
-        if ( modelId == null )
-        {
-            throw new IllegalArgumentException( "no model identifier specified" );
-        }
+        // Intentionally notNull because Super POM may not contain a modelId
+        Objects.requireNonNull( modelId, "modelId cannot null" );
 
         modelIds.add( modelId );
 
         return this;
     }
 
+    @Override
     public Model getRawModel()
     {
         return rawModels.get( modelIds.get( 0 ) );
     }
 
+    @Override
     public Model getRawModel( String modelId )
     {
         return rawModels.get( modelId );
@@ -98,16 +101,15 @@ class DefaultModelBuildingResult
 
     public DefaultModelBuildingResult setRawModel( String modelId, Model rawModel )
     {
-        if ( modelId == null )
-        {
-            throw new IllegalArgumentException( "no model identifier specified" );
-        }
+        // Intentionally notNull because Super POM may not contain a modelId
+        Objects.requireNonNull( modelId, "modelId cannot null" );
 
         rawModels.put( modelId, rawModel );
 
         return this;
     }
 
+    @Override
     public List<Profile> getActivePomProfiles( String modelId )
     {
         return activePomProfiles.get( modelId );
@@ -115,14 +117,12 @@ class DefaultModelBuildingResult
 
     public DefaultModelBuildingResult setActivePomProfiles( String modelId, List<Profile> activeProfiles )
     {
-        if ( modelId == null )
-        {
-            throw new IllegalArgumentException( "no model identifier specified" );
-        }
+        // Intentionally notNull because Super POM may not contain a modelId
+        Objects.requireNonNull( modelId, "modelId cannot null" );
 
         if ( activeProfiles != null )
         {
-            this.activePomProfiles.put( modelId, new ArrayList<Profile>( activeProfiles ) );
+            this.activePomProfiles.put( modelId, new ArrayList<>( activeProfiles ) );
         }
         else
         {
@@ -132,6 +132,7 @@ class DefaultModelBuildingResult
         return this;
     }
 
+    @Override
     public List<Profile> getActiveExternalProfiles()
     {
         return activeExternalProfiles;
@@ -141,7 +142,7 @@ class DefaultModelBuildingResult
     {
         if ( activeProfiles != null )
         {
-            this.activeExternalProfiles = new ArrayList<Profile>( activeProfiles );
+            this.activeExternalProfiles = new ArrayList<>( activeProfiles );
         }
         else
         {
@@ -151,6 +152,7 @@ class DefaultModelBuildingResult
         return this;
     }
 
+    @Override
     public List<ModelProblem> getProblems()
     {
         return problems;
@@ -160,7 +162,7 @@ class DefaultModelBuildingResult
     {
         if ( problems != null )
         {
-            this.problems = new ArrayList<ModelProblem>( problems );
+            this.problems = new ArrayList<>( problems );
         }
         else
         {

@@ -27,7 +27,7 @@ import org.apache.maven.model.building.ModelProblem;
 
 /**
  * Collects the output of the project builder.
- * 
+ *
  * @author Benjamin Bentmann
  */
 class DefaultProjectBuildingResult
@@ -46,13 +46,13 @@ class DefaultProjectBuildingResult
 
     /**
      * Creates a new result with the specified contents.
-     * 
+     *
      * @param project The project that was built, may be {@code null}.
-     * @param problems The problems that were encouterned, may be {@code null}.
+     * @param problems The problems that were encountered, may be {@code null}.
      * @param dependencyResolutionResult The result of the resolution for the project dependencies, may be {@code null}.
      */
-    public DefaultProjectBuildingResult( MavenProject project, List<ModelProblem> problems,
-                                         DependencyResolutionResult dependencyResolutionResult )
+    DefaultProjectBuildingResult( MavenProject project, List<ModelProblem> problems,
+                                  DependencyResolutionResult dependencyResolutionResult )
     {
         this.projectId =
             ( project != null ) ? project.getGroupId() + ':' + project.getArtifactId() + ':' + project.getVersion()
@@ -65,12 +65,12 @@ class DefaultProjectBuildingResult
 
     /**
      * Creates a new result with the specified contents.
-     * 
+     *
      * @param projectId The identifier of the project, may be {@code null}.
      * @param pomFile The POM file from which the project was built, may be {@code null}.
-     * @param problems The problems that were encouterned, may be {@code null}.
+     * @param problems The problems that were encountered, may be {@code null}.
      */
-    public DefaultProjectBuildingResult( String projectId, File pomFile, List<ModelProblem> problems )
+    DefaultProjectBuildingResult( String projectId, File pomFile, List<ModelProblem> problems )
     {
         this.projectId = ( projectId != null ) ? projectId : "";
         this.pomFile = pomFile;
@@ -96,7 +96,7 @@ class DefaultProjectBuildingResult
     {
         if ( problems == null )
         {
-            problems = new ArrayList<ModelProblem>();
+            problems = new ArrayList<>();
         }
 
         return problems;

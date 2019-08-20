@@ -42,14 +42,15 @@ import java.util.List;
 
 /**
  * A stub dependency graph that is custom made for testing concurrent build graph evaluations.
- * <p/>
+ * <p>
  * Implements a graph as follows:
  * A has no dependencies
  * B depends on A
  * C depends on A
- * X depends on B & C
+ * X depends on B &amp; C
  * Y depends on B
  * Z depends on C
+ * </p>
  *
  * @author Kristian Rosenvold
  */
@@ -97,7 +98,7 @@ public class ProjectDependencyGraphStub
         NoPluginFoundForPrefixException, PluginNotFoundException, MojoNotFoundException, PluginResolutionException,
         LifecyclePhaseNotFoundException, LifecycleNotFoundException
     {
-        List<ProjectSegment> projectBuilds = new ArrayList<ProjectSegment>();
+        List<ProjectSegment> projectBuilds = new ArrayList<>();
 
         TaskSegment segment = createTaskSegment();
         projectBuilds.add( createProjectBuild( A, session, segment ) );
@@ -159,7 +160,7 @@ public class ProjectDependencyGraphStub
 
     private List<Dependency> getDependencies()
     {
-        List<Dependency> dependencies = new ArrayList<Dependency>();
+        List<Dependency> dependencies = new ArrayList<>();
         dependencies.add( new Dependency( B, A ) );
         dependencies.add( new Dependency( C, A ) );
         dependencies.add( new Dependency( X, B ) );
@@ -169,9 +170,14 @@ public class ProjectDependencyGraphStub
         return dependencies;
     }
 
+    public List<MavenProject> getAllProjects()
+    {
+        return Arrays.asList( A, B, C, X, Y, Z, UNKNOWN );
+    }
+
     public List<MavenProject> getSortedProjects()
     {
-        return Arrays.asList( A, B, C, X, Y, Z ); // I'm not entirely sure about the order but this shold do...
+        return Arrays.asList( A, B, C, X, Y, Z ); // I'm not entirely sure about the order but this should do...
     }
 
     public List<MavenProject> getDownstreamProjects( MavenProject project, boolean transitive )
@@ -180,7 +186,7 @@ public class ProjectDependencyGraphStub
         {
             throw new RuntimeException( "Not implemented yet" );
         }
-        List<MavenProject> result = new ArrayList<MavenProject>();
+        List<MavenProject> result = new ArrayList<>();
         for ( Dependency dependency : getDependencies() )
         {
             dependency.addIfDownstream( project, result );
@@ -194,7 +200,7 @@ public class ProjectDependencyGraphStub
         {
             throw new RuntimeException( "Not implemented yet" );
         }*/
-        List<MavenProject> result = new ArrayList<MavenProject>();
+        List<MavenProject> result = new ArrayList<>();
         final List<Dependency> dependencies = getDependencies();
         for ( Dependency dependency : dependencies )
         {

@@ -74,15 +74,15 @@ import org.eclipse.aether.repository.RemoteRepository;
 
 /**
  * The concern of the project is provide runtime values based on the model.
- * <p/>
+ * <p>
  * The values in the model remain untouched but during the process of building a project notions like inheritance and
  * interpolation can be added. This allows to have an entity which is useful in a runtime while preserving the model so
  * that it can be marshalled and unmarshalled without being tainted by runtime requirements.
- * <p/>
+ * </p>
  * <p>
  * With changes during 3.2.2 release MavenProject is closer to being immutable after construction with the removal of
- * all components from this class, and the upfront construction taken care of entirely by the @{ProjectBuilder}. There
- * is still the issue of having to run the lifecycle in order to find all the compile source roots and resource
+ * all components from this class, and the upfront construction taken care of entirely by the {@link ProjectBuilder}.
+ * There is still the issue of having to run the lifecycle in order to find all the compile source roots and resource
  * directories but I hope to take care of this during the Maven 4.0 release (jvz).
  * </p>
  */
@@ -100,6 +100,8 @@ public class MavenProject
     private MavenProject parent;
 
     private File file;
+
+    private File basedir;
 
     private Set<Artifact> resolvedArtifacts;
 
@@ -125,19 +127,19 @@ public class MavenProject
 
     private List<MavenProject> collectedProjects;
 
-    private List<String> compileSourceRoots = new ArrayList<String>();
+    private List<String> compileSourceRoots = new ArrayList<>();
 
-    private List<String> testCompileSourceRoots = new ArrayList<String>();
+    private List<String> testCompileSourceRoots = new ArrayList<>();
 
-    private List<String> scriptSourceRoots = new ArrayList<String>();
+    private List<String> scriptSourceRoots = new ArrayList<>();
 
     private ArtifactRepository releaseArtifactRepository;
 
     private ArtifactRepository snapshotArtifactRepository;
 
-    private List<Profile> activeProfiles = new ArrayList<Profile>();
+    private List<Profile> activeProfiles = new ArrayList<>();
 
-    private Map<String, List<String>> injectedProfileIds = new LinkedHashMap<String, List<String>>();
+    private Map<String, List<String>> injectedProfileIds = new LinkedHashMap<>();
 
     private Set<Artifact> dependencyArtifacts;
 
@@ -160,7 +162,7 @@ public class MavenProject
 
     private Map<String, Artifact> managedVersionMap;
 
-    private Map<String, MavenProject> projectReferences = new HashMap<String, MavenProject>();
+    private Map<String, MavenProject> projectReferences = new HashMap<>();
 
     private boolean executionRoot;
 
@@ -219,7 +221,7 @@ public class MavenProject
         this.artifact = artifact;
     }
 
-    // @todo I would like to get rid of this. jvz.
+    // TODO I would like to get rid of this. jvz.
     public Model getModel()
     {
         return model;
@@ -227,7 +229,7 @@ public class MavenProject
 
     /**
      * Returns the project corresponding to a declared parent.
-     * 
+     *
      * @return the parent, or null if no parent is declared or there was an error building it
      */
     public MavenProject getParent()
@@ -253,19 +255,22 @@ public class MavenProject
     public void setFile( File file )
     {
         this.file = file;
+        this.basedir = file != null ? file.getParentFile() : null;
+    }
+
+    /**
+     * Sets project {@code file} without changing project {@code basedir}.
+     *
+     * @since 3.2.4
+     */
+    public void setPomFile( File file )
+    {
+        this.file = file;
     }
 
     public File getBasedir()
     {
-        if ( getFile() != null )
-        {
-            return getFile().getParentFile();
-        }
-        else
-        {
-            // repository based POM
-            return null;
-        }
+        return basedir;
     }
 
     public void setDependencies( List<Dependency> dependencies )
@@ -298,6 +303,10 @@ public class MavenProject
                 if ( file.isAbsolute() )
                 {
                     path = file.getAbsolutePath();
+                }
+                else if ( ".".equals( path ) )
+                {
+                    path = getBasedir().getAbsolutePath();
                 }
                 else
                 {
@@ -335,7 +344,7 @@ public class MavenProject
     public List<String> getCompileClasspathElements()
         throws DependencyResolutionRequiredException
     {
-        List<String> list = new ArrayList<String>( getArtifacts().size() + 1 );
+        List<String> list = new ArrayList<>( getArtifacts().size() + 1 );
 
         String d = getBuild().getOutputDirectory();
         if ( d != null )
@@ -347,7 +356,7 @@ public class MavenProject
         {
             if ( a.getArtifactHandler().isAddedToClasspath() )
             {
-                // TODO: let the scope handler deal with this
+                // TODO let the scope handler deal with this
                 if ( Artifact.SCOPE_COMPILE.equals( a.getScope() ) || Artifact.SCOPE_PROVIDED.equals( a.getScope() )
                     || Artifact.SCOPE_SYSTEM.equals( a.getScope() ) )
                 {
@@ -359,12 +368,12 @@ public class MavenProject
         return list;
     }
 
-    // TODO: this checking for file == null happens because the resolver has been confused about the root
+    // TODO this checking for file == null happens because the resolver has been confused about the root
     // artifact or not. things like the stupid dummy artifact coming from surefire.
     public List<String> getTestClasspathElements()
         throws DependencyResolutionRequiredException
     {
-        List<String> list = new ArrayList<String>( getArtifacts().size() + 2 );
+        List<String> list = new ArrayList<>( getArtifacts().size() + 2 );
 
         String d = getBuild().getTestOutputDirectory();
         if ( d != null )
@@ -392,7 +401,7 @@ public class MavenProject
     public List<String> getRuntimeClasspathElements()
         throws DependencyResolutionRequiredException
     {
-        List<String> list = new ArrayList<String>( getArtifacts().size() + 1 );
+        List<String> list = new ArrayList<>( getArtifacts().size() + 1 );
 
         String d = getBuild().getOutputDirectory();
         if ( d != null )
@@ -403,7 +412,7 @@ public class MavenProject
         for ( Artifact a : getArtifacts() )
         {
             if ( a.getArtifactHandler().isAddedToClasspath()
-            // TODO: let the scope handler deal with this
+            // TODO let the scope handler deal with this
                 && ( Artifact.SCOPE_COMPILE.equals( a.getScope() ) || Artifact.SCOPE_RUNTIME.equals( a.getScope() ) ) )
             {
                 addArtifactPath( a, list );
@@ -465,7 +474,7 @@ public class MavenProject
 
     public String getName()
     {
-        // TODO: this should not be allowed to be null.
+        // TODO this should not be allowed to be null.
         if ( getModel().getName() != null )
         {
             return getModel().getName();
@@ -690,8 +699,8 @@ public class MavenProject
      * All dependencies that this project has, including transitive ones. Contents are lazily populated, so depending on
      * what phases have run dependencies in some scopes won't be included. eg. if only compile phase has run,
      * dependencies with scope test won't be included.
-     * 
-     * @return {@link Set} &lt; {@link Artifact} >
+     *
+     * @return {@link Set} &lt; {@link Artifact} &gt;
      * @see #getDependencyArtifacts() to get only direct dependencies
      */
     public Set<Artifact> getArtifacts()
@@ -700,11 +709,11 @@ public class MavenProject
         {
             if ( artifactFilter == null || resolvedArtifacts == null )
             {
-                artifacts = new LinkedHashSet<Artifact>();
+                artifacts = new LinkedHashSet<>();
             }
             else
             {
-                artifacts = new LinkedHashSet<Artifact>( resolvedArtifacts.size() * 2 );
+                artifacts = new LinkedHashSet<>( resolvedArtifacts.size() * 2 );
                 for ( Artifact artifact : resolvedArtifacts )
                 {
                     if ( artifactFilter.include( artifact ) )
@@ -773,7 +782,7 @@ public class MavenProject
         {
             return Collections.emptyList();
         }
-        return getModel().getBuild().getPlugins();
+        return Collections.unmodifiableList( getModel().getBuild().getPlugins() );
     }
 
     public List<String> getModules()
@@ -818,7 +827,7 @@ public class MavenProject
     {
         if ( remoteArtifactRepositories == null )
         {
-            remoteArtifactRepositories = new ArrayList<ArtifactRepository>();
+            remoteArtifactRepositories = new ArrayList<>();
         }
 
         return remoteArtifactRepositories;
@@ -838,7 +847,7 @@ public class MavenProject
     {
         if ( pluginArtifactRepositories == null )
         {
-            pluginArtifactRepositories = new ArrayList<ArtifactRepository>();
+            pluginArtifactRepositories = new ArrayList<>();
         }
 
         return pluginArtifactRepositories;
@@ -880,7 +889,7 @@ public class MavenProject
     {
         if ( injectedProfileIds != null )
         {
-            this.injectedProfileIds.put( source, new ArrayList<String>( injectedProfileIds ) );
+            this.injectedProfileIds.put( source, new ArrayList<>( injectedProfileIds ) );
         }
         else
         {
@@ -894,7 +903,7 @@ public class MavenProject
      * {@code settings.xml}. The profile identifiers are grouped by the identifier of their source, e.g.
      * {@code <groupId>:<artifactId>:<version>} for a POM profile or {@code external} for profiles from the
      * {@code settings.xml}.
-     * 
+     *
      * @return The identifiers of all injected profiles, indexed by the source from which the profiles originated, never
      *         {@code null}.
      */
@@ -909,7 +918,7 @@ public class MavenProject
      * 3.0.x. Historically, it logged and ignored a second addition of the same g/a/v/c/t. Now it replaces the file for
      * the artifact, so that plugins (e.g. shade) can change the pathname of the file for a particular set of
      * coordinates.
-     * 
+     *
      * @param artifact the artifact to add or replace.
      * @throws DuplicateArtifactAttachmentException
      */
@@ -923,7 +932,7 @@ public class MavenProject
     {
         if ( attachedArtifacts == null )
         {
-            attachedArtifacts = new ArrayList<Artifact>();
+            attachedArtifacts = new ArrayList<>();
         }
         return attachedArtifacts;
     }
@@ -986,15 +995,17 @@ public class MavenProject
 
     /**
      * Direct dependencies that this project has.
-     * 
-     * @return {@link Set} &lt; {@link Artifact} >
+     *
+     * @return {@link Set} &lt; {@link Artifact} &gt;
      * @see #getArtifacts() to get all transitive dependencies
      */
+    @Deprecated
     public Set<Artifact> getDependencyArtifacts()
     {
         return dependencyArtifacts;
     }
 
+    @Deprecated
     public void setDependencyArtifacts( Set<Artifact> dependencyArtifacts )
     {
         this.dependencyArtifacts = dependencyArtifacts;
@@ -1072,7 +1083,7 @@ public class MavenProject
         }
         else
         {
-            return build.getExtensions();
+            return Collections.unmodifiableList( build.getExtensions() );
         }
     }
 
@@ -1126,9 +1137,9 @@ public class MavenProject
         StringBuilder sb = new StringBuilder( 128 );
         sb.append( "MavenProject: " );
         sb.append( getGroupId() );
-        sb.append( ":" );
+        sb.append( ':' );
         sb.append( getArtifactId() );
-        sb.append( ":" );
+        sb.append( ':' );
         sb.append( getVersion() );
         sb.append( " @ " );
 
@@ -1145,7 +1156,6 @@ public class MavenProject
     }
 
     /**
-     * @throws CloneNotSupportedException
      * @since 2.0.9
      */
     @Override
@@ -1166,7 +1176,7 @@ public class MavenProject
         return clone;
     }
 
-    protected void setModel( Model model )
+    public void setModel( Model model )
     {
         this.model = model;
     }
@@ -1201,7 +1211,8 @@ public class MavenProject
         // disown the parent
 
         // copy fields
-        setFile( project.getFile() );
+        file = project.file;
+        basedir = project.basedir;
 
         // don't need a deep copy, they don't get modified or added/removed to/from - but make them unmodifiable to be
         // sure!
@@ -1244,7 +1255,7 @@ public class MavenProject
 
         if ( project.getPluginArtifactRepositories() != null )
         {
-            setPluginArtifactRepositories( ( Collections.unmodifiableList( project.getPluginArtifactRepositories() ) ) );
+            setPluginArtifactRepositories( Collections.unmodifiableList( project.getPluginArtifactRepositories() ) );
         }
 
         if ( project.getActiveProfiles() != null )
@@ -1255,23 +1266,23 @@ public class MavenProject
         if ( project.getAttachedArtifacts() != null )
         {
             // clone properties modifyable by plugins in a forked lifecycle
-            setAttachedArtifacts( new ArrayList<Artifact>( project.getAttachedArtifacts() ) );
+            setAttachedArtifacts( new ArrayList<>( project.getAttachedArtifacts() ) );
         }
 
         if ( project.getCompileSourceRoots() != null )
         {
             // clone source roots
-            setCompileSourceRoots( ( new ArrayList<String>( project.getCompileSourceRoots() ) ) );
+            setCompileSourceRoots( ( new ArrayList<>( project.getCompileSourceRoots() ) ) );
         }
 
         if ( project.getTestCompileSourceRoots() != null )
         {
-            setTestCompileSourceRoots( ( new ArrayList<String>( project.getTestCompileSourceRoots() ) ) );
+            setTestCompileSourceRoots( ( new ArrayList<>( project.getTestCompileSourceRoots() ) ) );
         }
 
         if ( project.getScriptSourceRoots() != null )
         {
-            setScriptSourceRoots( ( new ArrayList<String>( project.getScriptSourceRoots() ) ) );
+            setScriptSourceRoots( ( new ArrayList<>( project.getScriptSourceRoots() ) ) );
         }
 
         if ( project.getModel() != null )
@@ -1293,7 +1304,7 @@ public class MavenProject
 
         if ( project.getManagedVersionMap() != null )
         {
-            setManagedVersionMap( new HashMap<String, Artifact>( project.getManagedVersionMap() ) );
+            setManagedVersionMap( project.getManagedVersionMap() );
         }
 
         lifecyclePhases.addAll( project.lifecyclePhases );
@@ -1324,7 +1335,7 @@ public class MavenProject
     {
         if ( context == null )
         {
-            context = new HashMap<String, Object>();
+            context = new HashMap<>();
         }
         if ( value != null )
         {
@@ -1352,7 +1363,7 @@ public class MavenProject
      * Sets the project's class realm. <strong>Warning:</strong> This is an internal utility method that is only public
      * for technical reasons, it is not part of the public API. In particular, this method can be changed or deleted
      * without prior notice and must not be used by plugins.
-     * 
+     *
      * @param classRealm The class realm hosting the build extensions of this project, may be {@code null}.
      */
     public void setClassRealm( ClassRealm classRealm )
@@ -1365,7 +1376,7 @@ public class MavenProject
      * <strong>Warning:</strong> This is an internal utility method that is only public for technical reasons, it is not
      * part of the public API. In particular, this method can be changed or deleted without prior notice and must not be
      * used by plugins.
-     * 
+     *
      * @return The project's class realm or {@code null}.
      */
     public ClassRealm getClassRealm()
@@ -1377,7 +1388,7 @@ public class MavenProject
      * Sets the artifact filter used to exclude shared extension artifacts from plugin realms. <strong>Warning:</strong>
      * This is an internal utility method that is only public for technical reasons, it is not part of the public API.
      * In particular, this method can be changed or deleted without prior notice and must not be used by plugins.
-     * 
+     *
      * @param extensionDependencyFilter The dependency filter to apply to plugins, may be {@code null}.
      */
     public void setExtensionDependencyFilter( DependencyFilter extensionDependencyFilter )
@@ -1390,7 +1401,7 @@ public class MavenProject
      * <strong>Warning:</strong> This is an internal utility method that is only public for technical reasons, it is not
      * part of the public API. In particular, this method can be changed or deleted without prior notice and must not be
      * used by plugins.
-     * 
+     *
      * @return The dependency filter or {@code null}.
      */
     public DependencyFilter getExtensionDependencyFilter()
@@ -1403,7 +1414,7 @@ public class MavenProject
      * <strong>Warning:</strong> This is an internal utility method that is only public for technical reasons, it is not
      * part of the public API. In particular, this method can be changed or deleted without prior notice and must not be
      * used by plugins.
-     * 
+     *
      * @param artifacts The set of artifacts, may be {@code null}.
      */
     public void setResolvedArtifacts( Set<Artifact> artifacts )
@@ -1418,7 +1429,7 @@ public class MavenProject
      * <strong>Warning:</strong> This is an internal utility method that is only public for technical reasons, it is not
      * part of the public API. In particular, this method can be changed or deleted without prior notice and must not be
      * used by plugins.
-     * 
+     *
      * @param artifactFilter The artifact filter, may be {@code null} to exclude all artifacts.
      */
     public void setArtifactFilter( ArtifactFilter artifactFilter )
@@ -1432,7 +1443,7 @@ public class MavenProject
      * <strong>Warning:</strong> This is an internal utility method that is only public for technical reasons, it is not
      * part of the public API. In particular, this method can be changed or deleted without prior notice and must not be
      * used by plugins.
-     * 
+     *
      * @param phase The phase to check for, must not be {@code null}.
      * @return {@code true} if the phase has been seen.
      */
@@ -1445,7 +1456,7 @@ public class MavenProject
      * <strong>Warning:</strong> This is an internal utility method that is only public for technical reasons, it is not
      * part of the public API. In particular, this method can be changed or deleted without prior notice and must not be
      * used by plugins.
-     * 
+     *
      * @param lifecyclePhase The lifecycle phase to add, must not be {@code null}.
      */
     public void addLifecyclePhase( String lifecyclePhase )
@@ -1453,17 +1464,17 @@ public class MavenProject
         lifecyclePhases.add( lifecyclePhase );
     }
 
-    // --------------------------------------------------------------------------------------------------------------------
+    // ----------------------------------------------------------------------------------------------------------------
     //
     //
     // D E P R E C A T E D
     //
     //
-    // --------------------------------------------------------------------------------------------------------------------
+    // ----------------------------------------------------------------------------------------------------------------
     //
     // Everything below will be removed for Maven 4.0.0
     //
-    // --------------------------------------------------------------------------------------------------------------------
+    // ----------------------------------------------------------------------------------------------------------------
 
     private ProjectBuildingRequest projectBuilderConfiguration;
 
@@ -1488,7 +1499,7 @@ public class MavenProject
 
         if ( moduleAdjustments == null )
         {
-            moduleAdjustments = new HashMap<String, String>();
+            moduleAdjustments = new HashMap<>();
 
             List<String> modules = getModules();
             if ( modules != null )
@@ -1523,10 +1534,11 @@ public class MavenProject
         }
 
         return moduleAdjustments.get( module );
-    }    
-    
+    }
+
     @Deprecated
-    public Set<Artifact> createArtifacts( ArtifactFactory artifactFactory, String inheritedScope, ArtifactFilter filter )
+    public Set<Artifact> createArtifacts( ArtifactFactory artifactFactory, String inheritedScope,
+                                          ArtifactFilter filter )
         throws InvalidDependencyVersionException
     {
         return MavenMetadataSource.createArtifacts( artifactFactory, getDependencies(), inheritedScope, filter, this );
@@ -1563,14 +1575,14 @@ public class MavenProject
     @Deprecated
     public List<Artifact> getCompileArtifacts()
     {
-        List<Artifact> list = new ArrayList<Artifact>( getArtifacts().size() );
+        List<Artifact> list = new ArrayList<>( getArtifacts().size() );
 
         for ( Artifact a : getArtifacts() )
         {
-            // TODO: classpath check doesn't belong here - that's the other method
+            // TODO classpath check doesn't belong here - that's the other method
             if ( a.getArtifactHandler().isAddedToClasspath() )
             {
-                // TODO: let the scope handler deal with this
+                // TODO let the scope handler deal with this
                 if ( Artifact.SCOPE_COMPILE.equals( a.getScope() ) || Artifact.SCOPE_PROVIDED.equals( a.getScope() )
                     || Artifact.SCOPE_SYSTEM.equals( a.getScope() ) )
                 {
@@ -1591,13 +1603,13 @@ public class MavenProject
             return Collections.emptyList();
         }
 
-        List<Dependency> list = new ArrayList<Dependency>( artifacts.size() );
+        List<Dependency> list = new ArrayList<>( artifacts.size() );
 
         for ( Artifact a : getArtifacts() )
         {
-            // TODO: let the scope handler deal with this
+            // TODO let the scope handler deal with this
             if ( Artifact.SCOPE_COMPILE.equals( a.getScope() ) || Artifact.SCOPE_PROVIDED.equals( a.getScope() )
-                || Artifact.SCOPE_SYSTEM.equals( a.getScope() ) )
+                     || Artifact.SCOPE_SYSTEM.equals( a.getScope() ) )
             {
                 Dependency dependency = new Dependency();
 
@@ -1611,17 +1623,17 @@ public class MavenProject
                 list.add( dependency );
             }
         }
-        return list;
+        return Collections.unmodifiableList( list );
     }
 
     @Deprecated
     public List<Artifact> getTestArtifacts()
     {
-        List<Artifact> list = new ArrayList<Artifact>( getArtifacts().size() );
+        List<Artifact> list = new ArrayList<>( getArtifacts().size() );
 
         for ( Artifact a : getArtifacts() )
         {
-            // TODO: classpath check doesn't belong here - that's the other method
+            // TODO classpath check doesn't belong here - that's the other method
             if ( a.getArtifactHandler().isAddedToClasspath() )
             {
                 list.add( a );
@@ -1640,7 +1652,7 @@ public class MavenProject
             return Collections.emptyList();
         }
 
-        List<Dependency> list = new ArrayList<Dependency>( artifacts.size() );
+        List<Dependency> list = new ArrayList<>( artifacts.size() );
 
         for ( Artifact a : getArtifacts() )
         {
@@ -1655,7 +1667,7 @@ public class MavenProject
 
             list.add( dependency );
         }
-        return list;
+        return Collections.unmodifiableList( list );
     }
 
     @Deprecated // used by the Maven ITs
@@ -1668,11 +1680,11 @@ public class MavenProject
             return Collections.emptyList();
         }
 
-        List<Dependency> list = new ArrayList<Dependency>( artifacts.size() );
+        List<Dependency> list = new ArrayList<>( artifacts.size() );
 
-        for ( Artifact a : getArtifacts()  )
+        for ( Artifact a : getArtifacts() )
         {
-            // TODO: let the scope handler deal with this
+            // TODO let the scope handler deal with this
             if ( Artifact.SCOPE_COMPILE.equals( a.getScope() ) || Artifact.SCOPE_RUNTIME.equals( a.getScope() ) )
             {
                 Dependency dependency = new Dependency();
@@ -1687,32 +1699,32 @@ public class MavenProject
                 list.add( dependency );
             }
         }
-        return list;
-    }    
-    
+        return Collections.unmodifiableList( list );
+    }
+
     @Deprecated
     public List<Artifact> getRuntimeArtifacts()
     {
-        List<Artifact> list = new ArrayList<Artifact>( getArtifacts().size() );
+        List<Artifact> list = new ArrayList<>( getArtifacts().size() );
 
         for ( Artifact a : getArtifacts()  )
         {
-            // TODO: classpath check doesn't belong here - that's the other method
+            // TODO classpath check doesn't belong here - that's the other method
             if ( a.getArtifactHandler().isAddedToClasspath()
-            // TODO: let the scope handler deal with this
+            // TODO let the scope handler deal with this
                 && ( Artifact.SCOPE_COMPILE.equals( a.getScope() ) || Artifact.SCOPE_RUNTIME.equals( a.getScope() ) ) )
             {
                 list.add( a );
             }
         }
         return list;
-    }    
-    
+    }
+
     @Deprecated
     public List<String> getSystemClasspathElements()
         throws DependencyResolutionRequiredException
     {
-        List<String> list = new ArrayList<String>( getArtifacts().size() );
+        List<String> list = new ArrayList<>( getArtifacts().size() );
 
         String d = getBuild().getOutputDirectory();
         if ( d != null )
@@ -1724,7 +1736,7 @@ public class MavenProject
         {
             if ( a.getArtifactHandler().isAddedToClasspath() )
             {
-                // TODO: let the scope handler deal with this
+                // TODO let the scope handler deal with this
                 if ( Artifact.SCOPE_SYSTEM.equals( a.getScope() ) )
                 {
                     addArtifactPath( a, list );
@@ -1737,14 +1749,14 @@ public class MavenProject
     @Deprecated
     public List<Artifact> getSystemArtifacts()
     {
-        List<Artifact> list = new ArrayList<Artifact>( getArtifacts().size() );
+        List<Artifact> list = new ArrayList<>( getArtifacts().size() );
 
         for ( Artifact a : getArtifacts() )
         {
-            // TODO: classpath check doesn't belong here - that's the other method
+            // TODO classpath check doesn't belong here - that's the other method
             if ( a.getArtifactHandler().isAddedToClasspath() )
             {
-                // TODO: let the scope handler deal with this
+                // TODO let the scope handler deal with this
                 if ( Artifact.SCOPE_SYSTEM.equals( a.getScope() ) )
                 {
                     list.add( a );
@@ -1764,11 +1776,11 @@ public class MavenProject
             return Collections.emptyList();
         }
 
-        List<Dependency> list = new ArrayList<Dependency>( artifacts.size() );
+        List<Dependency> list = new ArrayList<>( artifacts.size() );
 
         for ( Artifact a : getArtifacts() )
         {
-            // TODO: let the scope handler deal with this
+            // TODO let the scope handler deal with this
             if ( Artifact.SCOPE_SYSTEM.equals( a.getScope() ) )
             {
                 Dependency dependency = new Dependency();
@@ -1783,7 +1795,7 @@ public class MavenProject
                 list.add( dependency );
             }
         }
-        return list;
+        return Collections.unmodifiableList( list );
     }
 
     @Deprecated
@@ -1855,8 +1867,7 @@ public class MavenProject
         {
             return Collections.emptyList();
         }
-        return getModel().getReporting().getPlugins();
-
+        return Collections.unmodifiableList( getModel().getReporting().getPlugins() );
     }
 
     @Deprecated
@@ -1944,7 +1955,7 @@ public class MavenProject
     /**
      * Gets the project building request from which this project instance was created. <strong>Warning:</strong> This is
      * an utility method that is meant to assist integrators of Maven, it must not be used by Maven plugins.
-     * 
+     *
      * @return The project building request or {@code null}.
      * @since 2.1
      */
@@ -1957,7 +1968,7 @@ public class MavenProject
     /**
      * Sets the project building request from which this project instance was created. <strong>Warning:</strong> This is
      * an utility method that is meant to assist integrators of Maven, it must not be used by Maven plugins.
-     * 
+     *
      * @param projectBuildingRequest The project building request, may be {@code null}.
      * @since 2.1
      */

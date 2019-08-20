@@ -28,13 +28,14 @@ class BuildTimestampValueSource
     extends AbstractValueSource
 {
     private final MavenBuildTimestamp mavenBuildTimestamp;
-    
-    public BuildTimestampValueSource( Date startTime, Properties properties )
+
+    BuildTimestampValueSource( Date startTime, Properties properties )
     {
         super( false );
         this.mavenBuildTimestamp = new MavenBuildTimestamp( startTime, properties );
     }
 
+    @Override
     public Object getValue( String expression )
     {
         if ( "build.timestamp".equals( expression ) || "maven.build.timestamp".equals( expression ) )

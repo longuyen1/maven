@@ -74,7 +74,7 @@ public class MetadataResolutionResult
         return originatingArtifact;
     }
 
-    public MetadataResolutionResult ListOriginatingArtifact( final Artifact originatingArtifact )
+    public MetadataResolutionResult listOriginatingArtifact( final Artifact originatingArtifact )
     {
         this.originatingArtifact = originatingArtifact;
 
@@ -85,7 +85,7 @@ public class MetadataResolutionResult
     {
         if ( artifacts == null )
         {
-            artifacts = new LinkedHashSet<Artifact>();
+            artifacts = new LinkedHashSet<>();
         }
 
         artifacts.add( artifact );
@@ -100,7 +100,7 @@ public class MetadataResolutionResult
     {
         if ( requestedArtifacts == null )
         {
-            requestedArtifacts = new LinkedHashSet<Artifact>();
+            requestedArtifacts = new LinkedHashSet<>();
         }
 
         requestedArtifacts.add( artifact );
@@ -118,7 +118,10 @@ public class MetadataResolutionResult
 
     public List<Artifact> getMissingArtifacts()
     {
-        return missingArtifacts == null ? Collections.<Artifact> emptyList() : missingArtifacts;
+        return missingArtifacts == null
+                   ? Collections.<Artifact>emptyList()
+                   : Collections.unmodifiableList( missingArtifacts );
+
     }
 
     public MetadataResolutionResult addMissingArtifact( Artifact artifact )
@@ -148,7 +151,10 @@ public class MetadataResolutionResult
 
     public List<Exception> getExceptions()
     {
-        return exceptions == null ? Collections.<Exception> emptyList() : exceptions;
+        return exceptions == null
+                   ? Collections.<Exception>emptyList()
+                   : Collections.unmodifiableList( exceptions );
+
     }
 
     // ------------------------------------------------------------------------
@@ -161,9 +167,9 @@ public class MetadataResolutionResult
     }
 
     /**
-     * @TODO this needs to accept a {@link OverConstrainedVersionException} as returned by
+     * TODO this needs to accept a {@link OverConstrainedVersionException} as returned by
      *       {@link #getVersionRangeViolation(int)} but it's not used like that in
-     *       {@link DefaultLegacyArtifactCollector}
+     *       {@link org.apache.maven.repository.legacy.resolver.DefaultLegacyArtifactCollector}
      */
     public MetadataResolutionResult addVersionRangeViolation( Exception e )
     {
@@ -185,7 +191,10 @@ public class MetadataResolutionResult
 
     public List<Exception> getVersionRangeViolations()
     {
-        return versionRangeViolations == null ? Collections.<Exception> emptyList() : versionRangeViolations;
+        return versionRangeViolations == null
+                   ? Collections.<Exception>emptyList()
+                   : Collections.unmodifiableList( versionRangeViolations );
+
     }
 
     // ------------------------------------------------------------------------
@@ -217,8 +226,10 @@ public class MetadataResolutionResult
 
     public List<ArtifactResolutionException> getMetadataResolutionExceptions()
     {
-        return metadataResolutionExceptions == null ? Collections.<ArtifactResolutionException> emptyList()
-                        : metadataResolutionExceptions;
+        return metadataResolutionExceptions == null
+                   ? Collections.<ArtifactResolutionException>emptyList()
+                   : Collections.unmodifiableList( metadataResolutionExceptions );
+
     }
 
     // ------------------------------------------------------------------------
@@ -232,10 +243,7 @@ public class MetadataResolutionResult
 
     public MetadataResolutionResult addError( Exception e )
     {
-        if ( exceptions == null )
-        {
-            initList( exceptions );
-        }
+        exceptions = initList( exceptions );
 
         exceptions.add( e );
 
@@ -249,7 +257,7 @@ public class MetadataResolutionResult
             return Collections.emptyList();
         }
 
-        return errorArtifactExceptions;
+        return Collections.unmodifiableList( errorArtifactExceptions );
     }
 
     // ------------------------------------------------------------------------
@@ -286,7 +294,7 @@ public class MetadataResolutionResult
             return Collections.emptyList();
         }
 
-        return circularDependencyExceptions;
+        return Collections.unmodifiableList( circularDependencyExceptions );
     }
 
     // ------------------------------------------------------------------------
@@ -300,7 +308,7 @@ public class MetadataResolutionResult
             return Collections.emptyList();
         }
 
-        return repositories;
+        return Collections.unmodifiableList( repositories );
     }
 
     public MetadataResolutionResult setRepositories( final List<ArtifactRepository> repositories )
@@ -318,28 +326,27 @@ public class MetadataResolutionResult
     {
         if ( l == null )
         {
-            return new ArrayList<T>();
+            return new ArrayList<>();
         }
         return l;
     }
 
     public String toString()
     {
-        StringBuilder sb = new StringBuilder();
-
-        if ( artifacts != null )
+        if ( artifacts == null )
         {
-            int i = 1;
-            sb.append( "---------" ).append( "\n" );
-            sb.append( artifacts.size() ).append( "\n" );
-            for ( Artifact a : artifacts )
-            {
-                sb.append( i ).append( " " ).append( a ).append( "\n" );
-                i++;
-            }
-            sb.append( "---------" ).append( "\n" );
+            return "";
         }
-
+        StringBuilder sb = new StringBuilder( 256 );
+        int i = 1;
+        sb.append( "---------\n" );
+        sb.append( artifacts.size() ).append( '\n' );
+        for ( Artifact a : artifacts )
+        {
+            sb.append( i ).append( ' ' ).append( a ).append( '\n' );
+            i++;
+        }
+        sb.append( "---------\n" );
         return sb.toString();
     }
 

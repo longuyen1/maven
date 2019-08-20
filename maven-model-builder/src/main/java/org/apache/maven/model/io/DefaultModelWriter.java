@@ -25,90 +25,68 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.util.Map;
+import java.util.Objects;
+
+import javax.inject.Named;
+import javax.inject.Singleton;
 
 import org.apache.maven.model.Model;
 import org.apache.maven.model.io.xpp3.MavenXpp3Writer;
-import org.codehaus.plexus.component.annotations.Component;
-import org.codehaus.plexus.util.IOUtil;
 import org.codehaus.plexus.util.WriterFactory;
 
 /**
  * Handles serialization of a model into some kind of textual format like XML.
- * 
+ *
  * @author Benjamin Bentmann
  */
-@Component( role = ModelWriter.class )
+@Named
+@Singleton
 public class DefaultModelWriter
     implements ModelWriter
 {
 
+    @Override
     public void write( File output, Map<String, Object> options, Model model )
         throws IOException
     {
-        if ( output == null )
-        {
-            throw new IllegalArgumentException( "output file missing" );
-        }
-
-        if ( model == null )
-        {
-            throw new IllegalArgumentException( "model missing" );
-        }
+        Objects.requireNonNull( output, "output cannot be null" );
+        Objects.requireNonNull( model, "model cannot be null" );
 
         output.getParentFile().mkdirs();
 
         write( WriterFactory.newXmlWriter( output ), options, model );
     }
 
+    @Override
     public void write( Writer output, Map<String, Object> options, Model model )
         throws IOException
     {
-        if ( output == null )
-        {
-            throw new IllegalArgumentException( "output writer missing" );
-        }
+        Objects.requireNonNull( output, "output cannot be null" );
+        Objects.requireNonNull( model, "model cannot be null" );
 
-        if ( model == null )
+        try ( final Writer out = output )
         {
-            throw new IllegalArgumentException( "model missing" );
-        }
-
-        try
-        {
-            MavenXpp3Writer w = new MavenXpp3Writer();
-            w.write( output, model );
-        }
-        finally
-        {
-            IOUtil.close( output );
+            new MavenXpp3Writer().write( out, model );
         }
     }
 
+    @Override
     public void write( OutputStream output, Map<String, Object> options, Model model )
         throws IOException
     {
-        if ( output == null )
+        Objects.requireNonNull( output, "output cannot be null" );
+        Objects.requireNonNull( model, "model cannot be null" );
+
+        String encoding = model.getModelEncoding();
+        // TODO Use StringUtils here
+        if ( encoding == null || encoding.length() <= 0 )
         {
-            throw new IllegalArgumentException( "output stream missing" );
+            encoding = "UTF-8";
         }
 
-        if ( model == null )
+        try ( final Writer out = new OutputStreamWriter( output, encoding ) )
         {
-            throw new IllegalArgumentException( "model missing" );
-        }
-
-        try
-        {
-            String encoding = model.getModelEncoding();
-            if ( encoding == null || encoding.length() <= 0 )
-            {
-                encoding = "UTF-8";
-            }
-            write( new OutputStreamWriter( output, encoding ), options, model );
-        }
-        finally
-        {
-            IOUtil.close( output );
+            write( out, options, model );
         }
     }
 

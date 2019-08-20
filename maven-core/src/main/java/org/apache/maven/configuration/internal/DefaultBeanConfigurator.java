@@ -20,6 +20,7 @@ package org.apache.maven.configuration.internal;
  */
 
 import java.io.File;
+import java.util.Objects;
 
 import org.apache.maven.configuration.BeanConfigurationException;
 import org.apache.maven.configuration.BeanConfigurationPathTranslator;
@@ -40,7 +41,7 @@ import org.codehaus.plexus.util.xml.Xpp3Dom;
 /**
  * <strong>Warning:</strong> This is an internal class that is only public for technical reasons, it is not part of the
  * public API. In particular, this class can be changed or deleted without prior notice.
- * 
+ *
  * @author Benjamin Bentmann
  */
 @Component( role = BeanConfigurator.class )
@@ -53,15 +54,8 @@ public class DefaultBeanConfigurator
     public void configureBean( BeanConfigurationRequest request )
         throws BeanConfigurationException
     {
-        if ( request == null )
-        {
-            throw new IllegalArgumentException( "bean configuration request not specified" );
-        }
-
-        if ( request.getBean() == null )
-        {
-            throw new IllegalArgumentException( "bean to be configured not specified" );
-        }
+        Objects.requireNonNull( request, "request cannot be null" );
+        Objects.requireNonNull( request.getBean(), "request.bean cannot be null" );
 
         Object configuration = request.getConfiguration();
         if ( configuration == null )
@@ -117,7 +111,7 @@ public class DefaultBeanConfigurator
 
         private final BeanConfigurationPathTranslator translator;
 
-        public BeanExpressionEvaluator( BeanConfigurationRequest request )
+        BeanExpressionEvaluator( BeanConfigurationRequest request )
         {
             preprocessor = request.getValuePreprocessor();
             translator = request.getPathTranslator();

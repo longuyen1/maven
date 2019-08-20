@@ -47,7 +47,7 @@ class SettingsAdapter
 
     private RuntimeInfo runtimeInfo;
 
-    public SettingsAdapter( MavenExecutionRequest request )
+    SettingsAdapter( MavenExecutionRequest request )
     {
         this.request = request;
 
@@ -104,7 +104,7 @@ class SettingsAdapter
     @Override
     public List<Profile> getProfiles()
     {
-        List<Profile> result = new ArrayList<Profile>();
+        List<Profile> result = new ArrayList<>();
         for ( org.apache.maven.model.Profile profile : request.getProfiles() )
         {
             result.add( SettingsUtils.convertToSettingsProfile( profile ) );

@@ -21,18 +21,21 @@ package org.apache.maven.model.path;
 
 import java.io.File;
 
-import org.codehaus.plexus.component.annotations.Component;
+import javax.inject.Named;
+import javax.inject.Singleton;
 
 /**
  * Resolves relative paths against a specific base directory.
- * 
+ *
  * @author Benjamin Bentmann
  */
-@Component( role = PathTranslator.class )
+@Named
+@Singleton
 public class DefaultPathTranslator
     implements PathTranslator
 {
 
+    @Override
     public String alignToBaseDirectory( String path, File basedir )
     {
         String result = path;

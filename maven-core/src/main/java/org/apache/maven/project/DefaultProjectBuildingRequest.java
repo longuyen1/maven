@@ -22,13 +22,18 @@ package org.apache.maven.project;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Objects;
 import java.util.Properties;
 
 import org.apache.maven.artifact.repository.ArtifactRepository;
 import org.apache.maven.model.Profile;
 import org.apache.maven.model.building.ModelBuildingRequest;
+import org.apache.maven.properties.internal.SystemProperties;
 import org.eclipse.aether.RepositorySystemSession;
 
+/**
+ * DefaultProjectBuildingRequest
+ */
 public class DefaultProjectBuildingRequest
     implements ProjectBuildingRequest
 {
@@ -61,6 +66,7 @@ public class DefaultProjectBuildingRequest
 
     private boolean resolveDependencies;
 
+    @Deprecated
     private boolean resolveVersionRanges;
 
     private RepositoryMerging repositoryMerging = RepositoryMerging.POM_DOMINANT;
@@ -68,13 +74,13 @@ public class DefaultProjectBuildingRequest
     public DefaultProjectBuildingRequest()
     {
         processPlugins = true;
-        profiles = new ArrayList<Profile>();
-        activeProfileIds = new ArrayList<String>();
-        inactiveProfileIds = new ArrayList<String>();
+        profiles = new ArrayList<>();
+        activeProfileIds = new ArrayList<>();
+        inactiveProfileIds = new ArrayList<>();
         systemProperties = new Properties();
         userProperties = new Properties();
-        remoteRepositories = new ArrayList<ArtifactRepository>();
-        pluginArtifactRepositories = new ArrayList<ArtifactRepository>();
+        remoteRepositories = new ArrayList<>();
+        pluginArtifactRepositories = new ArrayList<>();
     }
 
     public DefaultProjectBuildingRequest( ProjectBuildingRequest request )
@@ -94,6 +100,8 @@ public class DefaultProjectBuildingRequest
         setProject( request.getProject() );
         setResolveDependencies( request.isResolveDependencies() );
         setValidationLevel( request.getValidationLevel() );
+        setResolveVersionRanges( request.isResolveVersionRanges() );
+        setRepositoryMerging( request.getRepositoryMerging() );
     }
 
     public MavenProject getProject()
@@ -126,7 +134,7 @@ public class DefaultProjectBuildingRequest
     {
         if ( remoteRepositories != null )
         {
-            this.remoteRepositories = new ArrayList<ArtifactRepository>( remoteRepositories );
+            this.remoteRepositories = new ArrayList<>( remoteRepositories );
         }
         else
         {
@@ -145,7 +153,7 @@ public class DefaultProjectBuildingRequest
     {
         if ( pluginArtifactRepositories != null )
         {
-            this.pluginArtifactRepositories = new ArrayList<ArtifactRepository>( pluginArtifactRepositories );
+            this.pluginArtifactRepositories = new ArrayList<>( pluginArtifactRepositories );
         }
         else
         {
@@ -164,11 +172,7 @@ public class DefaultProjectBuildingRequest
     {
         if ( systemProperties != null )
         {
-            this.systemProperties = new Properties();
-            synchronized ( systemProperties )
-            { // avoid concurrentmodification if someone else sets/removes an unrelated system property
-                this.systemProperties.putAll( systemProperties );
-            }
+            this.systemProperties = SystemProperties.copyProperties( systemProperties );
         }
         else
         {
@@ -208,7 +212,7 @@ public class DefaultProjectBuildingRequest
         this.processPlugins = processPlugins;
         return this;
     }
-    
+
     public ProjectBuildingRequest setResolveDependencies( boolean resolveDependencies )
     {
         this.resolveDependencies = resolveDependencies;
@@ -220,14 +224,24 @@ public class DefaultProjectBuildingRequest
         return resolveDependencies;
     }
 
-    /** @since 3.2.2 */
+    /**
+     * @since 3.2.2
+     * @deprecated This got added when implementing MNG-2199 and is no longer used.
+     * Commit 6cf9320942c34bc68205425ab696b1712ace9ba4 updated the way 'MavenProject' objects are initialized.
+     */
+    @Deprecated
     public ProjectBuildingRequest setResolveVersionRanges( boolean value )
     {
         this.resolveVersionRanges = value;
         return this;
     }
 
-    /** @since 3.2.2 */
+    /**
+     * @since 3.2.2
+     * @deprecated This got added when implementing MNG-2199 and is no longer used.
+     * Commit 6cf9320942c34bc68205425ab696b1712ace9ba4 updated the way 'MavenProject' objects are initialized.
+     */
+    @Deprecated
     public boolean isResolveVersionRanges()
     {
         return this.resolveVersionRanges;
@@ -253,7 +267,7 @@ public class DefaultProjectBuildingRequest
     {
         if ( activeProfileIds != null )
         {
-            this.activeProfileIds = new ArrayList<String>( activeProfileIds );
+            this.activeProfileIds = new ArrayList<>( activeProfileIds );
         }
         else
         {
@@ -270,7 +284,7 @@ public class DefaultProjectBuildingRequest
     {
         if ( inactiveProfileIds != null )
         {
-            this.inactiveProfileIds = new ArrayList<String>( inactiveProfileIds );
+            this.inactiveProfileIds = new ArrayList<>( inactiveProfileIds );
         }
         else
         {
@@ -282,7 +296,7 @@ public class DefaultProjectBuildingRequest
     {
         if ( profiles != null )
         {
-            this.profiles = new ArrayList<Profile>( profiles );
+            this.profiles = new ArrayList<>( profiles );
         }
         else
         {
@@ -323,11 +337,7 @@ public class DefaultProjectBuildingRequest
 
     public DefaultProjectBuildingRequest setRepositoryMerging( RepositoryMerging repositoryMerging )
     {
-        if ( repositoryMerging == null )
-        {
-            throw new IllegalArgumentException( "repository merge mode not specified" );
-        }
-        this.repositoryMerging = repositoryMerging;
+        this.repositoryMerging = Objects.requireNonNull( repositoryMerging, "repositoryMerging cannot be null" );
         return this;
     }
 

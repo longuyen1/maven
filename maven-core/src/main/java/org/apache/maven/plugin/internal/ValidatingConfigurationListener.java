@@ -30,7 +30,7 @@ import org.codehaus.plexus.component.configurator.ConfigurationListener;
 /**
  * A configuration listener to help validate the plugin configuration. For instance, check for required but missing
  * parameters.
- * 
+ *
  * @author Benjamin Bentmann
  */
 class ValidatingConfigurationListener
@@ -43,11 +43,11 @@ class ValidatingConfigurationListener
 
     private final Map<String, Parameter> missingParameters;
 
-    public ValidatingConfigurationListener( Object mojo, MojoDescriptor mojoDescriptor, ConfigurationListener delegate )
+    ValidatingConfigurationListener( Object mojo, MojoDescriptor mojoDescriptor, ConfigurationListener delegate )
     {
         this.mojo = mojo;
         this.delegate = delegate;
-        this.missingParameters = new HashMap<String, Parameter>();
+        this.missingParameters = new HashMap<>();
 
         if ( mojoDescriptor.getParameters() != null )
         {

@@ -21,6 +21,9 @@ package org.apache.maven.artifact.resolver.filter;
 
 import org.apache.maven.artifact.Artifact;
 
+/**
+ * InversionArtifactFilter
+ */
 public class InversionArtifactFilter
     implements ArtifactFilter
 {
@@ -51,14 +54,14 @@ public class InversionArtifactFilter
         {
             return true;
         }
-        
+
         if ( !( obj instanceof InversionArtifactFilter ) )
         {
             return false;
         }
-        
+
         InversionArtifactFilter other = (InversionArtifactFilter) obj;
-        
+
         return toInvert.equals( other.toInvert );
     }
 

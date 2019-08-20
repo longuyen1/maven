@@ -39,6 +39,7 @@ import org.codehaus.plexus.PlexusTestCase;
 import org.eclipse.aether.DefaultRepositorySystemSession;
 import org.eclipse.aether.internal.impl.SimpleLocalRepositoryManagerFactory;
 import org.eclipse.aether.repository.LocalRepository;
+import static org.junit.Assert.assertNotEquals;
 
 public class PomConstructionTest
     extends PlexusTestCase
@@ -50,9 +51,9 @@ public class PomConstructionTest
     private static String BASE_MIXIN_DIR = BASE_DIR + "/resources-mixins";
 
     private DefaultProjectBuilder projectBuilder;
-    
+
     private RepositorySystem repositorySystem;
-    
+
     private File testDirectory;
 
     @Override
@@ -71,7 +72,7 @@ public class PomConstructionTest
         projectBuilder = (DefaultProjectBuilder) lookup( ProjectBuilder.class );
         repositorySystem = lookup( RepositorySystem.class );
     }
-    
+
     @Override
     protected void tearDown()
         throws Exception
@@ -80,13 +81,13 @@ public class PomConstructionTest
 
         super.tearDown();
     }
-    
+
     /**
-     * Will throw exception if url is empty. MNG-4050 
+     * Will throw exception if url is empty. MNG-4050
      *
      * @throws Exception
      */
- 
+
     public void testEmptyUrl()
         throws Exception
     {
@@ -94,8 +95,8 @@ public class PomConstructionTest
     }
 
     /**
-     * Tests that modules is not overriden by profile
-     * 
+     * Tests that modules is not overridden by profile
+     *
      * @throws Exception
      */
     /* MNG-786*/
@@ -137,12 +138,12 @@ public class PomConstructionTest
         PomTestWrapper pom = buildPom( "plugin-config-properties" );
         assertEquals( "my.property", pom.getValue( "build/plugins[1]/configuration[1]/systemProperties[1]/property[1]/name" ) );
     }
-    
+
     /*MNG-3900*/
     public void testProfilePropertiesInterpolation()
-    	throws Exception 
+        throws Exception
     {
-    	PomTestWrapper pom = buildPom( "profile-properties-interpolation", "interpolation-profile" );
+        PomTestWrapper pom = buildPom( "profile-properties-interpolation", "interpolation-profile" );
         assertEquals( "PASSED", pom.getValue( "properties[1]/test" ) );
         assertEquals( "PASSED", pom.getValue( "properties[1]/property" ) );
     }
@@ -207,7 +208,7 @@ public class PomConstructionTest
     {
         try
         {
-            buildPom( "unique-dependency-key/dep-mngt" );
+            buildPom( "unique-dependency-key/dep-mgmt" );
             fail( "Non-unique dependency keys did not cause validation error" );
         }
         catch ( ProjectBuildingException e )
@@ -235,7 +236,7 @@ public class PomConstructionTest
     {
         try
         {
-            buildPom( "unique-dependency-key/dep-mngt-in-profile" );
+            buildPom( "unique-dependency-key/dep-mgmt-in-profile" );
             fail( "Non-unique dependency keys did not cause validation error" );
         }
         catch ( ProjectBuildingException e )
@@ -267,15 +268,15 @@ public class PomConstructionTest
         throws Exception
     {
         PomTestWrapper pom =  buildPomFromMavenProject( "maven-build/sub/pom.xml", null );
-  
-        for( String s: pom.getMavenProject().getTestClasspathElements() ) 
+
+        for( String s: pom.getMavenProject().getTestClasspathElements() )
         {
             System.out.println( s );
         }
-        
+
     }
     */
-    
+
     /* MNG-3567*/
     public void testPluginManagementInherited()
         throws Exception
@@ -349,13 +350,13 @@ public class PomConstructionTest
         assertEquals( "src/main/mdo/security.xml",
                       ( pom.getValue( "build/plugins[1]/executions[2]/configuration[1]/model" ) ) );
     }
-    
+
     /*
     public void testPluginConfigDuplicate()
     throws Exception
 {
     PomTestWrapper pom = buildPom( "plugin-config-duplicate/dup" );
-} 
+}
 */
 
 
@@ -414,7 +415,7 @@ public class PomConstructionTest
     public void testOrderOfGoalsFromPluginExecutionWithoutPluginManagement()
         throws Exception
     {
-        PomTestWrapper pom = buildPom( "plugin-exec-goals-order/wo-plugin-mngt" );
+        PomTestWrapper pom = buildPom( "plugin-exec-goals-order/wo-plugin-mgmt" );
         assertEquals( 5, ( (List<?>) pom.getValue( "build/plugins[1]/executions[1]/goals" ) ).size() );
         assertEquals( "b", pom.getValue( "build/plugins[1]/executions[1]/goals[1]" ) );
         assertEquals( "a", pom.getValue( "build/plugins[1]/executions[1]/goals[2]" ) );
@@ -427,7 +428,7 @@ public class PomConstructionTest
     public void testOrderOfGoalsFromPluginExecutionWithPluginManagement()
         throws Exception
     {
-        PomTestWrapper pom = buildPom( "plugin-exec-goals-order/w-plugin-mngt" );
+        PomTestWrapper pom = buildPom( "plugin-exec-goals-order/w-plugin-mgmt" );
         assertEquals( 5, ( (List<?>) pom.getValue( "build/plugins[1]/executions[1]/goals" ) ).size() );
         assertEquals( "b", pom.getValue( "build/plugins[1]/executions[1]/goals[1]" ) );
         assertEquals( "a", pom.getValue( "build/plugins[1]/executions[1]/goals[2]" ) );
@@ -439,7 +440,7 @@ public class PomConstructionTest
     public void testOrderOfPluginExecutionsWithoutPluginManagement()
         throws Exception
     {
-        PomTestWrapper pom = buildPom( "plugin-exec-order/wo-plugin-mngt" );
+        PomTestWrapper pom = buildPom( "plugin-exec-order/wo-plugin-mgmt" );
         assertEquals( 5, ( (List<?>) pom.getValue( "build/plugins[1]/executions" ) ).size() );
         assertEquals( "b", pom.getValue( "build/plugins[1]/executions[1]/id" ) );
         assertEquals( "a", pom.getValue( "build/plugins[1]/executions[2]/id" ) );
@@ -452,7 +453,7 @@ public class PomConstructionTest
     public void testOrderOfPluginExecutionsWithPluginManagement()
         throws Exception
     {
-        PomTestWrapper pom = buildPom( "plugin-exec-order/w-plugin-mngt" );
+        PomTestWrapper pom = buildPom( "plugin-exec-order/w-plugin-mgmt" );
         assertEquals( 5, ( (List<?>) pom.getValue( "build/plugins[1]/executions" ) ).size() );
         assertEquals( "b", pom.getValue( "build/plugins[1]/executions[1]/id" ) );
         assertEquals( "a", pom.getValue( "build/plugins[1]/executions[2]/id" ) );
@@ -488,7 +489,7 @@ public class PomConstructionTest
     public void testOrderOfMergedPluginExecutionsWithoutPluginManagement()
         throws Exception
     {
-        PomTestWrapper pom = buildPom( "merged-plugin-exec-order/wo-plugin-mngt/sub" );
+        PomTestWrapper pom = buildPom( "merged-plugin-exec-order/wo-plugin-mgmt/sub" );
         assertEquals( 5, ( (List<?>) pom.getValue( "build/plugins[1]/executions" ) ).size() );
         assertEquals( "parent-1", pom.getValue( "build/plugins[1]/executions[1]/goals[1]" ) );
         assertEquals( "parent-2", pom.getValue( "build/plugins[1]/executions[2]/goals[1]" ) );
@@ -500,7 +501,7 @@ public class PomConstructionTest
     public void testOrderOfMergedPluginExecutionsWithPluginManagement()
         throws Exception
     {
-        PomTestWrapper pom = buildPom( "merged-plugin-exec-order/w-plugin-mngt/sub" );
+        PomTestWrapper pom = buildPom( "merged-plugin-exec-order/w-plugin-mgmt/sub" );
         assertEquals( 5, ( (List<?>) pom.getValue( "build/plugins[1]/executions" ) ).size() );
         assertEquals( "parent-1", pom.getValue( "build/plugins[1]/executions[1]/goals[1]" ) );
         assertEquals( "parent-2", pom.getValue( "build/plugins[1]/executions[2]/goals[1]" ) );
@@ -522,7 +523,7 @@ public class PomConstructionTest
     public void testOrderOfMergedPluginExecutionGoalsWithoutPluginManagement()
         throws Exception
     {
-        PomTestWrapper pom = buildPom( "merged-plugin-exec-goals-order/wo-plugin-mngt/sub" );
+        PomTestWrapper pom = buildPom( "merged-plugin-exec-goals-order/wo-plugin-mgmt/sub" );
 
         assertEquals( 5, ( (List<?>) pom.getValue( "build/plugins[1]/executions[1]/goals" ) ).size() );
         assertEquals( "child-a", pom.getValue( "build/plugins[1]/executions[1]/goals[1]" ) );
@@ -535,7 +536,7 @@ public class PomConstructionTest
     public void testOrderOfMergedPluginExecutionGoalsWithPluginManagement()
         throws Exception
     {
-        PomTestWrapper pom = buildPom( "merged-plugin-exec-goals-order/w-plugin-mngt/sub" );
+        PomTestWrapper pom = buildPom( "merged-plugin-exec-goals-order/w-plugin-mgmt/sub" );
         assertEquals( 5, ( (List<?>) pom.getValue( "build/plugins[1]/executions[1]/goals" ) ).size() );
         assertEquals( "child-a", pom.getValue( "build/plugins[1]/executions[1]/goals[1]" ) );
         assertEquals( "merged", pom.getValue( "build/plugins[1]/executions[1]/goals[2]" ) );
@@ -548,7 +549,7 @@ public class PomConstructionTest
     public void testOverridingOfInheritedPluginExecutionsWithoutPluginManagement()
         throws Exception
     {
-        PomTestWrapper pom = buildPom( "plugin-exec-merging/wo-plugin-mngt/sub" );
+        PomTestWrapper pom = buildPom( "plugin-exec-merging/wo-plugin-mgmt/sub" );
         assertEquals( 2, ( (List<?>) pom.getValue( "build/plugins[1]/executions" ) ).size() );
         assertEquals( "child-default", pom.getValue( "build/plugins[1]/executions[@id='default']/phase" ) );
         assertEquals( "child-non-default", pom.getValue( "build/plugins[1]/executions[@id='non-default']/phase" ) );
@@ -558,7 +559,7 @@ public class PomConstructionTest
     public void testOverridingOfInheritedPluginExecutionsWithPluginManagement()
         throws Exception
     {
-        PomTestWrapper pom = buildPom( "plugin-exec-merging/w-plugin-mngt/sub" );
+        PomTestWrapper pom = buildPom( "plugin-exec-merging/w-plugin-mgmt/sub" );
         assertEquals( 2, ( (List<?>) pom.getValue( "build/plugins[1]/executions" ) ).size() );
         assertEquals( "child-default", pom.getValue( "build/plugins[1]/executions[@id='default']/phase" ) );
         assertEquals( "child-non-default", pom.getValue( "build/plugins[1]/executions[@id='non-default']/phase" ) );
@@ -569,7 +570,7 @@ public class PomConstructionTest
     public void testOrderOfMergedPluginDependenciesWithoutPluginManagement()
         throws Exception
     {
-        PomTestWrapper pom = buildPom( "merged-plugin-class-path-order/wo-plugin-mngt/sub" );
+        PomTestWrapper pom = buildPom( "merged-plugin-class-path-order/wo-plugin-mgmt/sub" );
 
         assertEquals( 5, ( (List<?>) pom.getValue( "build/plugins[1]/dependencies" ) ).size() );
         assertNotNull( pom.getValue( "build/plugins[1]/dependencies[1]" ) );
@@ -588,7 +589,7 @@ public class PomConstructionTest
     public void testOrderOfMergedPluginDependenciesWithPluginManagement()
         throws Exception
     {
-        PomTestWrapper pom = buildPom( "merged-plugin-class-path-order/w-plugin-mngt/sub" );
+        PomTestWrapper pom = buildPom( "merged-plugin-class-path-order/w-plugin-mgmt/sub" );
         assertEquals( 5, ( (List<?>) pom.getValue( "build/plugins[1]/dependencies" ) ).size() );
         assertEquals( "c", pom.getValue( "build/plugins[1]/dependencies[1]/artifactId" ) );
         assertEquals( "1", pom.getValue( "build/plugins[1]/dependencies[1]/version" ) );
@@ -769,7 +770,7 @@ public class PomConstructionTest
     public void testOrderOfPluginConfigurationElementsWithoutPluginManagement()
         throws Exception
     {
-        PomTestWrapper pom = buildPom( "plugin-config-order/wo-plugin-mngt" );
+        PomTestWrapper pom = buildPom( "plugin-config-order/wo-plugin-mgmt" );
         assertEquals( "one", pom.getValue( "build/plugins[1]/configuration/stringParams/stringParam[1]" ) );
         assertEquals( "two", pom.getValue( "build/plugins[1]/configuration/stringParams/stringParam[2]" ) );
         assertEquals( "three", pom.getValue( "build/plugins[1]/configuration/stringParams/stringParam[3]" ) );
@@ -780,7 +781,7 @@ public class PomConstructionTest
     public void testOrderOfPluginConfigurationElementsWithPluginManagement()
         throws Exception
     {
-        PomTestWrapper pom = buildPom( "plugin-config-order/w-plugin-mngt" );
+        PomTestWrapper pom = buildPom( "plugin-config-order/w-plugin-mgmt" );
         assertEquals( "one", pom.getValue( "build/plugins[1]/configuration/stringParams/stringParam[1]" ) );
         assertEquals( "two", pom.getValue( "build/plugins[1]/configuration/stringParams/stringParam[2]" ) );
         assertEquals( "three", pom.getValue( "build/plugins[1]/configuration/stringParams/stringParam[3]" ) );
@@ -790,7 +791,7 @@ public class PomConstructionTest
     public void testOrderOfPluginExecutionConfigurationElementsWithoutPluginManagement()
         throws Exception
     {
-        PomTestWrapper pom = buildPom( "plugin-exec-config-order/wo-plugin-mngt" );
+        PomTestWrapper pom = buildPom( "plugin-exec-config-order/wo-plugin-mgmt" );
         String prefix = "build/plugins[1]/executions[1]/configuration/";
         assertEquals( "one", pom.getValue( prefix + "stringParams/stringParam[1]" ) );
         assertEquals( "two", pom.getValue( prefix + "stringParams/stringParam[2]" ) );
@@ -804,7 +805,7 @@ public class PomConstructionTest
     public void testOrderOfPluginExecutionConfigurationElementsWithPluginManagement()
         throws Exception
     {
-        PomTestWrapper pom = buildPom( "plugin-exec-config-order/w-plugin-mngt" );
+        PomTestWrapper pom = buildPom( "plugin-exec-config-order/w-plugin-mgmt" );
         String prefix = "build/plugins[1]/executions[1]/configuration/";
         assertEquals( "one", pom.getValue( prefix + "stringParams/stringParam[1]" ) );
         assertEquals( "two", pom.getValue( prefix + "stringParams/stringParam[2]" ) );
@@ -839,14 +840,14 @@ public class PomConstructionTest
     {
         testAppendOfInheritedPluginConfiguration( "no-profile" );
     }
-    
+
     /* MNG-2591*/
     public void testAppendOfInheritedPluginConfigurationWithActiveProfile()
         throws Exception
     {
         testAppendOfInheritedPluginConfiguration( "with-profile" );
     }
- 
+
     private void testAppendOfInheritedPluginConfiguration( String test )
         throws Exception
     {
@@ -876,7 +877,7 @@ public class PomConstructionTest
     public void testMultiplePluginExecutionsWithAndWithoutIdsWithoutPluginManagement()
         throws Exception
     {
-        PomTestWrapper pom = buildPom( "plugin-exec-w-and-wo-id/wo-plugin-mngt" );
+        PomTestWrapper pom = buildPom( "plugin-exec-w-and-wo-id/wo-plugin-mgmt" );
         assertEquals( 2, ( (List<?>) pom.getValue( "build/plugins[1]/executions" ) ).size() );
         assertEquals( "log-string", pom.getValue( "build/plugins[1]/executions[1]/goals[1]" ) );
         assertEquals( "log-string", pom.getValue( "build/plugins[1]/executions[2]/goals[1]" ) );
@@ -885,7 +886,7 @@ public class PomConstructionTest
     public void testMultiplePluginExecutionsWithAndWithoutIdsWithPluginManagement()
         throws Exception
     {
-        PomTestWrapper pom = buildPom( "plugin-exec-w-and-wo-id/w-plugin-mngt" );
+        PomTestWrapper pom = buildPom( "plugin-exec-w-and-wo-id/w-plugin-mgmt" );
         assertEquals( 2, ( (List<?>) pom.getValue( "build/plugins[1]/executions" ) ).size() );
         assertEquals( "log-string", pom.getValue( "build/plugins[1]/executions[1]/goals[1]" ) );
         assertEquals( "log-string", pom.getValue( "build/plugins[1]/executions[2]/goals[1]" ) );
@@ -894,7 +895,7 @@ public class PomConstructionTest
     public void testDependencyOrderWithoutPluginManagement()
         throws Exception
     {
-        PomTestWrapper pom = buildPom( "dependency-order/wo-plugin-mngt" );
+        PomTestWrapper pom = buildPom( "dependency-order/wo-plugin-mgmt" );
         assertEquals( 4, ( (List<?>) pom.getValue( "dependencies" ) ).size() );
         assertEquals( "a", pom.getValue( "dependencies[1]/artifactId" ) );
         assertEquals( "c", pom.getValue( "dependencies[2]/artifactId" ) );
@@ -905,7 +906,7 @@ public class PomConstructionTest
     public void testDependencyOrderWithPluginManagement()
         throws Exception
     {
-        PomTestWrapper pom = buildPom( "dependency-order/w-plugin-mngt" );
+        PomTestWrapper pom = buildPom( "dependency-order/w-plugin-mgmt" );
         assertEquals( 4, ( (List<?>) pom.getValue( "dependencies" ) ).size() );
         assertEquals( "a", pom.getValue( "dependencies[1]/artifactId" ) );
         assertEquals( "c", pom.getValue( "dependencies[2]/artifactId" ) );
@@ -955,14 +956,14 @@ public class PomConstructionTest
         assertEquals( "b", pom.getValue( "dependencies[3]/artifactId" ) );
         assertEquals( "d", pom.getValue( "dependencies[4]/artifactId" ) );
     }
-    
+
     /** IT-0021*/
     public void testProfileDependenciesMultipleProfiles()
         throws Exception
     {
         PomTestWrapper pom = buildPom( "profile-dependencies-multiple-profiles", "profile-1", "profile-2" );
         assertEquals(2,  ( (List<?>) pom.getValue( "dependencies" ) ).size() );
-    }    
+    }
 
     public void testDependencyInheritance()
         throws Exception
@@ -993,7 +994,7 @@ public class PomConstructionTest
         PomTestWrapper pom = this.buildPom( "profile-module-inheritance/sub", "dist" );
         assertEquals( 0, ( (List<?>) pom.getValue( "modules" ) ).size() );
     }
-    
+
     /** MNG-3621 */
     public void testUncPath()
         throws Exception
@@ -1001,7 +1002,7 @@ public class PomConstructionTest
         PomTestWrapper pom = this.buildPom( "unc-path/sub" );
         assertEquals( "file:////host/site/test-child", pom.getValue( "distributionManagement/site/url" ) );
     }
-    
+
     /** MNG-2006 */
     public void testUrlAppendWithChildPathAdjustment()
         throws Exception
@@ -1012,7 +1013,7 @@ public class PomConstructionTest
         assertEquals( "http://scm.project.url/child", pom.getValue( "scm/connection" ) );
         assertEquals( "https://scm.project.url/child", pom.getValue( "scm/developerConnection" ) );
         assertEquals( "http://site.project.url/child", pom.getValue( "distributionManagement/site/url" ) );
-    } 
+    }
 
     /** MNG-0479 */
     public void testRepoInheritance()
@@ -1021,19 +1022,19 @@ public class PomConstructionTest
         PomTestWrapper pom = this.buildPom( "repo-inheritance" );
         assertEquals( 1, ( (List<?>) pom.getValue( "repositories" ) ).size() );
         assertEquals( "it0043", pom.getValue( "repositories[1]/name" ) );
-    }   
-    
+    }
+
     public void testEmptyScm()
         throws Exception
     {
         PomTestWrapper pom = this.buildPom( "empty-scm" );
         assertNull( pom.getValue( "scm" ) );
-    }       
-    
+    }
+
     public void testPluginConfigurationUsingAttributesWithoutPluginManagement()
         throws Exception
     {
-        PomTestWrapper pom = buildPom( "plugin-config-attributes/wo-plugin-mngt" );
+        PomTestWrapper pom = buildPom( "plugin-config-attributes/wo-plugin-mgmt" );
         assertEquals( "src", pom.getValue( "build/plugins[1]/configuration/domParam/copy/@todir" ) );
         assertEquals( "true", pom.getValue( "build/plugins[1]/configuration/domParam/copy/@overwrite" ) );
         assertEquals( "target", pom.getValue( "build/plugins[1]/configuration/domParam/copy/fileset/@dir" ) );
@@ -1045,7 +1046,7 @@ public class PomConstructionTest
     public void testPluginConfigurationUsingAttributesWithPluginManagement()
         throws Exception
     {
-        PomTestWrapper pom = buildPom( "plugin-config-attributes/w-plugin-mngt" );
+        PomTestWrapper pom = buildPom( "plugin-config-attributes/w-plugin-mgmt" );
         assertEquals( "src", pom.getValue( "build/plugins[1]/configuration/domParam/copy/@todir" ) );
         assertEquals( "true", pom.getValue( "build/plugins[1]/configuration/domParam/copy/@overwrite" ) );
         assertEquals( "target", pom.getValue( "build/plugins[1]/configuration/domParam/copy/fileset/@dir" ) );
@@ -1082,11 +1083,21 @@ public class PomConstructionTest
     }
 
     /* MNG-3760*/
-    public void testInterpolationOfBaseUrl()
+    public void testInterpolationOfBaseUri()
         throws Exception
     {
-        PomTestWrapper pom = buildPom( "baseurl-interpolation/pom.xml" );
-        assertEquals( pom.getBasedir().toURI().toString(), pom.getValue( "properties/prop1" ).toString() );
+        PomTestWrapper pom = buildPom( "baseuri-interpolation/pom.xml" );
+        assertNotEquals( pom.getBasedir().toURI().toString(), pom.getValue( "properties/prop1" ).toString() );
+    }
+
+    /* MNG-6386 */
+    public void testInterpolationOfRfc3986BaseUri()
+        throws Exception
+    {
+        PomTestWrapper pom = buildPom( "baseuri-interpolation/pom.xml" );
+        String prop1 = pom.getValue( "properties/prop1" ).toString();
+        assertEquals( pom.getBasedir().toPath().toUri().toASCIIString(), prop1 );
+        assertTrue( prop1.startsWith( "file:///" ) );
     }
 
     /* MNG-3811*/
@@ -1100,12 +1111,12 @@ public class PomConstructionTest
         assertEquals( "childParam", pom.getValue( "reporting/plugins[1]/configuration/stringParams[1]/stringParam[2]" ) );
         assertEquals( "  preserve space  ", pom.getValue( "reporting/plugins[1]/configuration/stringParams[1]/stringParam[3]" ) );
         assertEquals( "true", pom.getValue( "reporting/plugins[1]/configuration/booleanParam" ) );
-    }    
-    
+    }
+
     public void testPropertiesNoDuplication()
-    	throws Exception
+        throws Exception
     {
-    	PomTestWrapper pom = buildPom( "properties-no-duplication/sub" );	
+        PomTestWrapper pom = buildPom( "properties-no-duplication/sub" );
         assertEquals( 1, ( (Properties) pom.getValue( "properties" ) ).size() );
         assertEquals( "child", pom.getValue( "properties/pomProfile" ) );
     }
@@ -1381,7 +1392,7 @@ public class PomConstructionTest
         assertEquals( "CHILD", pom.getValue( "properties/overridden" ) );
         assertEquals( "CHILD", pom.getValue( "properties/interpolated" ) );
     }
-    
+
     /* MNG-3545 */
     public void testProfileDefaultActivation()
         throws Exception
@@ -1390,35 +1401,35 @@ public class PomConstructionTest
         assertEquals( 1, pom.getMavenProject().getActiveProfiles().size() );
         assertEquals( 1, ( (List<?>) pom.getValue( "build/plugins" ) ).size() );
         assertEquals( "2.1", pom.getValue( "build/plugins[1]/version" ) );
-    }    
-    
+    }
+
     /* MNG-1995 */
     public void testBooleanInterpolation()
         throws Exception
     {
         PomTestWrapper pom = buildPom( "boolean-interpolation" );
-        assertTrue ((Boolean) pom.getValue( "repositories[1]/releases/enabled" ) );     
-        assertTrue((Boolean) pom.getValue( "build/resources[1]/filtering" ) ); 
-    }    
+        assertTrue ((Boolean) pom.getValue( "repositories[1]/releases/enabled" ) );
+        assertTrue((Boolean) pom.getValue( "build/resources[1]/filtering" ) );
+    }
 
-    
+
     /* MNG-3899 */
     public void testBuildExtensionInheritance()
         throws Exception
     {
-        PomTestWrapper pom = buildPom( "build-extension-inheritance/sub" ); 
+        PomTestWrapper pom = buildPom( "build-extension-inheritance/sub" );
         assertEquals( 3, ( (List<?>) pom.getValue( "build/extensions" ) ).size() );
         assertEquals( "b", pom.getValue( "build/extensions[1]/artifactId" ) );
         assertEquals( "a", pom.getValue( "build/extensions[2]/artifactId" ) );
         assertEquals( "0.2", pom.getValue( "build/extensions[2]/version" ) );
         assertEquals( "c", pom.getValue( "build/extensions[3]/artifactId" ) );
     }
-    
+
     /*MNG-1957*/
     public void testJdkActivation()
-    	throws Exception
-	{
-    	Properties props = new Properties();
+        throws Exception
+    {
+        Properties props = new Properties();
         props.put( "java.version", "1.5.0_15" );
 
         PomTestWrapper pom = buildPom( "jdk-activation", props );
@@ -1426,16 +1437,16 @@ public class PomConstructionTest
         assertEquals( "PASSED", pom.getValue( "properties/jdkProperty3" ) );
         assertEquals( "PASSED", pom.getValue( "properties/jdkProperty2" ) );
         assertEquals( "PASSED", pom.getValue( "properties/jdkProperty1" ) );
-	}   
-    
+    }
+
     /* MNG-2174 */
     public void testProfilePluginMngDependencies()
         throws Exception
     {
         PomTestWrapper pom = buildPom( "profile-plugin-mng-dependencies/sub", "maven-core-it" );
         assertEquals( "a", pom.getValue( "build/plugins[1]/dependencies[1]/artifactId" ) );
-    }    
-    
+    }
+
     /** MNG-4116 */
     public void testPercentEncodedUrlsMustNotBeDecoded()
         throws Exception
@@ -1453,7 +1464,7 @@ public class PomConstructionTest
                       pom.getValue( "distributionManagement/snapshotRepository/url" ) );
         assertEquals( "scm:svn:svn+ssh://site.apache.org/spacy%20path",
                       pom.getValue( "distributionManagement/site/url" ) );
-    }    
+    }
 
     public void testPluginManagementInheritance()
         throws Exception
@@ -1461,66 +1472,66 @@ public class PomConstructionTest
         PomTestWrapper pom = this.buildPom( "plugin-management-inheritance" );
         assertEquals( "0.1-stub-SNAPSHOT",
                       pom.getValue( "build/pluginManagement/plugins[@artifactId='maven-compiler-plugin']/version" ) );
-    }   
-    
+    }
+
     public void testProfilePlugins()
-	    throws Exception
-	{
+        throws Exception
+    {
         PomTestWrapper pom = this.buildPom( "profile-plugins", "standard" );
         assertEquals( 2, ( (List<?>) pom.getValue( "build/plugins" ) ).size() );
         assertEquals( "maven-assembly2-plugin", pom.getValue( "build/plugins[2]/artifactId" ) );
-	}       
-    
+    }
+
     public void testPluginInheritanceSimple()
-	    throws Exception
-	{
+        throws Exception
+    {
         PomTestWrapper pom = this.buildPom( "plugin-inheritance-simple/sub" );
-	    assertEquals( 2, ( (List<?>) pom.getValue( "build/plugins" ) ).size() );   
-	} 
-    
+        assertEquals( 2, ( (List<?>) pom.getValue( "build/plugins" ) ).size() );
+    }
+
     public void testPluginManagementDuplicate()
-	    throws Exception
-	{
+        throws Exception
+    {
         PomTestWrapper pom = this.buildPom( "plugin-management-duplicate/sub" );
         assertEquals( 12, ( (List<?>) pom.getValue( "build/pluginManagement/plugins" ) ).size() );
-	} 
-    
+    }
+
     public void testDistributionManagement()
-	    throws Exception
-	{
+        throws Exception
+    {
         PomTestWrapper pom = this.buildPom( "distribution-management" );
         assertEquals( "legacy", pom.getValue( "distributionManagement/repository/layout" ) );
-	}      
-    
+    }
+
     public void testDependencyScopeInheritance()
-	    throws Exception
-	{
+        throws Exception
+    {
         PomTestWrapper pom = buildPom( "dependency-scope-inheritance/sub" );
         String scope = (String) pom.getValue( "dependencies[1]/scope" );
         assertEquals( "compile", scope );
-	}   
-    
+    }
+
     public void testDependencyScope()
-	    throws Exception
-	{
-	    buildPom( "dependency-scope/sub" );
-	}   
- 
+        throws Exception
+    {
+        buildPom( "dependency-scope/sub" );
+    }
+
     //This will fail on a validation error if incorrect
     public void testDependencyManagementWithInterpolation()
-	    throws Exception
-	{
-	    buildPom( "dependency-management-with-interpolation/sub" );
-	}   
+        throws Exception
+    {
+        buildPom( "dependency-management-with-interpolation/sub" );
+    }
 
     public void testInterpolationWithSystemProperty()
         throws Exception
     {
         Properties sysProps = new Properties();
         sysProps.setProperty( "system.property", "PASSED" );
-        PomTestWrapper pom = buildPom( "sytem-property-interpolation", sysProps );
+        PomTestWrapper pom = buildPom( "system-property-interpolation", sysProps );
         assertEquals( "PASSED", pom.getValue( "name" ) );
-    }    
+    }
 
     /* MNG-4129 */
     public void testPluginExecutionInheritanceWhenChildDoesNotDeclarePlugin()
@@ -1543,8 +1554,8 @@ public class PomConstructionTest
             (List<PluginExecution>) pom.getValue( "build/pluginsAsMap[@name='org.apache.maven.its.plugins:maven-it-plugin-log-file']/executions" );
         assertEquals( 1, executions.size() );
         assertEquals( "inherited-execution", executions.get( 0 ).getId() );
-    }    
-    
+    }
+
     /* MNG-4193 */
     public void testValidationErrorUponNonUniqueArtifactRepositoryId()
         throws Exception
@@ -1574,7 +1585,7 @@ public class PomConstructionTest
             // expected
         }
     }
-    
+
     /* MNG-4193 */
     public void testValidationErrorUponNonUniqueArtifactRepositoryIdInProfile()
         throws Exception
@@ -1611,7 +1622,7 @@ public class PomConstructionTest
     {
         PomTestWrapper pom = buildPom( "prerequisites-inheritance/child" );
         assertSame( null, pom.getValue( "prerequisites" ) );
-    }    
+    }
 
     public void testLicensesAreInheritedButNotAggregated()
         throws Exception
@@ -1620,7 +1631,7 @@ public class PomConstructionTest
         assertEquals( 1, ( (List<?>) pom.getValue( "licenses" ) ).size() );
         assertEquals( "child-license", pom.getValue( "licenses[1]/name" ) );
         assertEquals( "http://child.url/license", pom.getValue( "licenses[1]/url" ) );
-    }    
+    }
 
     public void testDevelopersAreInheritedButNotAggregated()
         throws Exception
@@ -1636,7 +1647,7 @@ public class PomConstructionTest
         PomTestWrapper pom = buildPom( "contributors-inheritance/child-2" );
         assertEquals( 1, ( (List<?>) pom.getValue( "contributors" ) ).size() );
         assertEquals( "child-contributor", pom.getValue( "contributors[1]/name" ) );
-    }    
+    }
 
     public void testMailingListsAreInheritedButNotAggregated()
         throws Exception
@@ -1644,7 +1655,7 @@ public class PomConstructionTest
         PomTestWrapper pom = buildPom( "mailing-lists-inheritance/child-2" );
         assertEquals( 1, ( (List<?>) pom.getValue( "mailingLists" ) ).size() );
         assertEquals( "child-mailing-list", pom.getValue( "mailingLists[1]/name" ) );
-    }    
+    }
 
     public void testPluginInheritanceOrder()
         throws Exception
@@ -1741,7 +1752,7 @@ public class PomConstructionTest
     {
         PomTestWrapper pom = buildPom( "plugin-inheritance-merge-order/sub" );
 
-        List<String> expected = new ArrayList<String>();
+        List<String> expected = new ArrayList<>();
         expected.add( "maven-it-plugin-error" );
         expected.add( "maven-it-plugin-configuration" );
         expected.add( "maven-it-plugin-dependency-resolution" );
@@ -1751,7 +1762,7 @@ public class PomConstructionTest
         expected.add( "maven-it-plugin-fork" );
         expected.add( "maven-it-plugin-touch" );
 
-        List<String> actual = new ArrayList<String>();
+        List<String> actual = new ArrayList<>();
         @SuppressWarnings( "unchecked" )
         List<Plugin> plugins = (List<Plugin>) pom.getValue( "build/plugins" );
         for ( Plugin plugin : plugins )
@@ -1770,7 +1781,7 @@ public class PomConstructionTest
     {
         PomTestWrapper pom = buildPom( "plugin-injection-merge-order" );
 
-        List<String> expected = new ArrayList<String>();
+        List<String> expected = new ArrayList<>();
         expected.add( "maven-it-plugin-error" );
         expected.add( "maven-it-plugin-configuration" );
         expected.add( "maven-it-plugin-dependency-resolution" );
@@ -1780,7 +1791,7 @@ public class PomConstructionTest
         expected.add( "maven-it-plugin-fork" );
         expected.add( "maven-it-plugin-touch" );
 
-        List<String> actual = new ArrayList<String>();
+        List<String> actual = new ArrayList<>();
         @SuppressWarnings( "unchecked" )
         List<Plugin> plugins = (List<Plugin>) pom.getValue( "build/plugins" );
         for ( Plugin plugin : plugins )
@@ -1818,7 +1829,7 @@ public class PomConstructionTest
     {
         assertEquals( new File( value.toString() ).getPath(), value.toString() );
     }
-    
+
     private PomTestWrapper buildPom( String pomPath, String... profileIds )
         throws Exception
     {
@@ -1863,7 +1874,7 @@ public class PomConstructionTest
 
     protected void assertModelEquals( PomTestWrapper pom, Object expected, String expression )
     {
-        assertEquals( expected, pom.getValue( expression ) );        
+        assertEquals( expected, pom.getValue( expression ) );
     }
 
     private static String createPath( List<String> elements )

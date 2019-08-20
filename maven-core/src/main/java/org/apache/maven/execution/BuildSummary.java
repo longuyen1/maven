@@ -19,11 +19,13 @@ package org.apache.maven.execution;
  * under the License.
  */
 
+import java.util.Objects;
+
 import org.apache.maven.project.MavenProject;
 
 /**
  * Summarizes the result of a project build in the reactor.
- * 
+ *
  * @author Benjamin Bentmann
  */
 public abstract class BuildSummary
@@ -41,23 +43,20 @@ public abstract class BuildSummary
 
     /**
      * Creates a new build summary for the specified project.
-     * 
+     *
      * @param project The project being summarized, must not be {@code null}.
      * @param time The build time of the project in milliseconds.
      */
     protected BuildSummary( MavenProject project, long time )
     {
-        if ( project == null )
-        {
-            throw new IllegalArgumentException( "project missing" );
-        }
-        this.project = project;
+        this.project = Objects.requireNonNull( project, "project cannot be null" );
+        // TODO Validate for < 0?
         this.time = time;
     }
 
     /**
      * Gets the project being summarized.
-     * 
+     *
      * @return The project being summarized, never {@code null}.
      */
     public MavenProject getProject()
@@ -67,7 +66,7 @@ public abstract class BuildSummary
 
     /**
      * Gets the build time of the project in milliseconds.
-     * 
+     *
      * @return The build time of the project in milliseconds.
      */
     public long getTime()

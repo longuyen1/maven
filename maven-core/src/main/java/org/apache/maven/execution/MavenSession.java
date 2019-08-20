@@ -39,20 +39,18 @@ import org.codehaus.plexus.component.repository.exception.ComponentLookupExcepti
 import org.eclipse.aether.RepositorySystemSession;
 
 /**
+ * A Maven execution session.
+ *
  * @author Jason van Zyl
  */
 public class MavenSession
     implements Cloneable
 {
-    private PlexusContainer container;
-
     private MavenExecutionRequest request;
 
     private MavenExecutionResult result;
 
     private RepositorySystemSession repositorySession;
-
-    private final Settings settings;
 
     private Properties executionProperties;
 
@@ -78,61 +76,8 @@ public class MavenSession
     private boolean parallel;
 
     private final Map<String, Map<String, Map<String, Object>>> pluginContextsByProjectAndPluginKey =
-        new ConcurrentHashMap<String, Map<String, Map<String, Object>>>();
+        new ConcurrentHashMap<>();
 
-    @Deprecated
-    public MavenSession( PlexusContainer container, MavenExecutionRequest request, MavenExecutionResult result,
-                         MavenProject project )
-    {
-        this( container, request, result, Arrays.asList( new MavenProject[]{project} ) );
-    }
-
-    @Deprecated
-    public MavenSession( PlexusContainer container, Settings settings, ArtifactRepository localRepository,
-                         EventDispatcher eventDispatcher, ReactorManager unused, List<String> goals,
-                         String executionRootDir, Properties executionProperties, Date startTime )
-    {
-        this( container, settings, localRepository, eventDispatcher, unused, goals, executionRootDir,
-              executionProperties, null, startTime );
-    }
-
-    @Deprecated
-    public MavenSession( PlexusContainer container, Settings settings, ArtifactRepository localRepository,
-                         EventDispatcher eventDispatcher, ReactorManager unused, List<String> goals,
-                         String executionRootDir, Properties executionProperties, Properties userProperties,
-                         Date startTime )
-    {
-        this.container = container;
-        this.settings = settings;
-        this.executionProperties = executionProperties;
-        this.request = new DefaultMavenExecutionRequest();
-        this.request.setUserProperties( userProperties );
-        this.request.setLocalRepository( localRepository );
-        this.request.setGoals( goals );
-        this.request.setBaseDirectory( ( executionRootDir != null ) ? new File( executionRootDir ) : null );
-        this.request.setStartTime( startTime );
-    }
-
-    @Deprecated
-    public MavenSession( PlexusContainer container, MavenExecutionRequest request, MavenExecutionResult result,
-                         List<MavenProject> projects )
-    {
-        this.container = container;
-        this.request = request;
-        this.result = result;
-        this.settings = new SettingsAdapter( request );
-        setProjects( projects );
-    }
-
-    public MavenSession( PlexusContainer container, RepositorySystemSession repositorySession, MavenExecutionRequest request,
-                         MavenExecutionResult result )
-    {
-        this.container = container;
-        this.request = request;
-        this.result = result;
-        this.settings = new SettingsAdapter( request );
-        this.repositorySession = repositorySession;
-    }
 
     public void setProjects( List<MavenProject> projects )
     {
@@ -155,40 +100,6 @@ public class MavenSession
             this.topLevelProject = null;
         }
         this.projects = projects;
-    }
-
-    @Deprecated
-    public PlexusContainer getContainer()
-    {
-        return container;
-    }
-
-    @Deprecated
-    public Object lookup( String role )
-        throws ComponentLookupException
-    {
-        return container.lookup( role );
-    }
-
-    @Deprecated
-    public Object lookup( String role, String roleHint )
-        throws ComponentLookupException
-    {
-        return container.lookup( role, roleHint );
-    }
-
-    @Deprecated
-    public List<Object> lookupList( String role )
-        throws ComponentLookupException
-    {
-        return container.lookupList( role );
-    }
-
-    @Deprecated
-    public Map<String, Object> lookupMap( String role )
-        throws ComponentLookupException
-    {
-        return container.lookupMap( role );
     }
 
     public ArtifactRepository getLocalRepository()
@@ -224,22 +135,6 @@ public class MavenSession
         return request.getSystemProperties();
     }
 
-    /**
-     * @deprecated Use either {@link #getUserProperties()} or {@link #getSystemProperties()}.
-     */
-    @Deprecated
-    public Properties getExecutionProperties()
-    {
-        if ( executionProperties == null )
-        {
-            executionProperties = new Properties();
-            executionProperties.putAll( request.getSystemProperties() );
-            executionProperties.putAll( request.getUserProperties() );
-        }
-
-        return executionProperties;
-    }
-
     public Settings getSettings()
     {
         return settings;
@@ -250,21 +145,9 @@ public class MavenSession
         return projects;
     }
 
-    @Deprecated
-    public List<MavenProject> getSortedProjects()
-    {
-        return getProjects();
-    }
-
     public String getExecutionRootDirectory()
     {
         return request.getBaseDirectory();
-    }
-
-    @Deprecated
-    public boolean isUsingPOMsFromFilesystem()
-    {
-        return request.isProjectPresent();
     }
 
     public MavenExecutionRequest getRequest()
@@ -317,7 +200,7 @@ public class MavenSession
 
         if ( pluginContextsByKey == null )
         {
-            pluginContextsByKey = new ConcurrentHashMap<String, Map<String, Object>>();
+            pluginContextsByKey = new ConcurrentHashMap<>();
 
             pluginContextsByProjectAndPluginKey.put( projectKey, pluginContextsByKey );
         }
@@ -328,7 +211,7 @@ public class MavenSession
 
         if ( pluginContext == null )
         {
-            pluginContext = new ConcurrentHashMap<String, Object>();
+            pluginContext = new ConcurrentHashMap<>();
 
             pluginContextsByKey.put( pluginKey, pluginContext );
         }
@@ -364,12 +247,6 @@ public class MavenSession
         }
     }
 
-    @Deprecated
-    public EventDispatcher getEventDispatcher()
-    {
-        return null;
-    }
-
     public Date getStartTime()
     {
         return request.getStartTime();
@@ -390,28 +267,13 @@ public class MavenSession
         return repositorySession;
     }
 
-    @Deprecated
-    //
-    // Used by Tycho and will break users and force them to upgrade to Maven 3.1 so we should really leave
-    // this here, possibly indefinitely.
-    //
-    public RepositoryCache getRepositoryCache()
-    {
-        return null;
-    }
-
     private Map<String, MavenProject> projectMap;
-    
+
     public void setProjectMap( Map<String, MavenProject> projectMap )
     {
         this.projectMap = projectMap;
     }
     
-    public Map<String, MavenProject> getProjectMap() 
-    {
-        return projectMap;
-    }
-
     /** This is a provisional method and may be removed */
     public List<MavenProject> getAllProjects()
     {
@@ -424,5 +286,157 @@ public class MavenSession
         this.allProjects = allProjects;
     }
     
+    /*if_not[MAVEN4]*/
+
+    //
+    // Deprecated 
+    //
+        
+    private PlexusContainer container;    
     
+    private final Settings settings;
+    
+    @Deprecated
+    /** @deprecated This appears to only be used in the ReactorReader and we can do any processing required there */
+    public Map<String, MavenProject> getProjectMap() 
+    {
+        return projectMap;
+    }
+    
+    @Deprecated
+    public MavenSession( PlexusContainer container, RepositorySystemSession repositorySession,
+                         MavenExecutionRequest request, MavenExecutionResult result )
+    {
+        this.container = container;
+        this.request = request;
+        this.result = result;
+        this.settings = new SettingsAdapter( request );
+        this.repositorySession = repositorySession;
+    }
+    
+    @Deprecated
+    public MavenSession( PlexusContainer container, MavenExecutionRequest request, MavenExecutionResult result,
+                         MavenProject project )
+    {
+        this( container, request, result, Arrays.asList( new MavenProject[]{project} ) );
+    }
+
+    @Deprecated
+    @SuppressWarnings( "checkstyle:parameternumber" )
+    public MavenSession( PlexusContainer container, Settings settings, ArtifactRepository localRepository,
+                         EventDispatcher eventDispatcher, ReactorManager unused, List<String> goals,
+                         String executionRootDir, Properties executionProperties, Date startTime )
+    {
+        this( container, settings, localRepository, eventDispatcher, unused, goals, executionRootDir,
+              executionProperties, null, startTime );
+    }
+
+    @Deprecated
+    @SuppressWarnings( "checkstyle:parameternumber" )
+    public MavenSession( PlexusContainer container, Settings settings, ArtifactRepository localRepository,
+                         EventDispatcher eventDispatcher, ReactorManager unused, List<String> goals,
+                         String executionRootDir, Properties executionProperties, Properties userProperties,
+                         Date startTime )
+    {
+        this.container = container;
+        this.settings = settings;
+        this.executionProperties = executionProperties;
+        this.request = new DefaultMavenExecutionRequest();
+        this.request.setUserProperties( userProperties );
+        this.request.setLocalRepository( localRepository );
+        this.request.setGoals( goals );
+        this.request.setBaseDirectory( ( executionRootDir != null ) ? new File( executionRootDir ) : null );
+        this.request.setStartTime( startTime );
+    }
+
+    @Deprecated
+    public MavenSession( PlexusContainer container, MavenExecutionRequest request, MavenExecutionResult result,
+                         List<MavenProject> projects )
+    {
+        this.container = container;
+        this.request = request;
+        this.result = result;
+        this.settings = new SettingsAdapter( request );
+        setProjects( projects );
+    }
+
+    @Deprecated
+    public List<MavenProject> getSortedProjects()
+    {
+        return getProjects();
+    }
+    
+    @Deprecated
+    //
+    // Used by Tycho and will break users and force them to upgrade to Maven 3.1 so we should really leave
+    // this here, possibly indefinitely.
+    //
+    public RepositoryCache getRepositoryCache()
+    {
+        return null;
+    }
+
+    @Deprecated
+    public EventDispatcher getEventDispatcher()
+    {
+        return null;
+    }
+
+    @Deprecated
+    public boolean isUsingPOMsFromFilesystem()
+    {
+        return request.isProjectPresent();
+    }
+
+    /**
+     * @deprecated Use either {@link #getUserProperties()} or {@link #getSystemProperties()}.
+     */
+    @Deprecated
+    public Properties getExecutionProperties()
+    {
+        if ( executionProperties == null )
+        {
+            executionProperties = new Properties();
+            executionProperties.putAll( request.getSystemProperties() );
+            executionProperties.putAll( request.getUserProperties() );
+        }
+
+        return executionProperties;
+    }
+    
+    @Deprecated
+    public PlexusContainer getContainer()
+    {
+        return container;
+    }
+
+    @Deprecated
+    public Object lookup( String role )
+        throws ComponentLookupException
+    {
+        return container.lookup( role );
+    }
+
+    @Deprecated
+    public Object lookup( String role, String roleHint )
+        throws ComponentLookupException
+    {
+        return container.lookup( role, roleHint );
+    }
+
+    @Deprecated
+    public List<Object> lookupList( String role )
+        throws ComponentLookupException
+    {
+        return container.lookupList( role );
+    }
+
+    @Deprecated
+    public Map<String, Object> lookupMap( String role )
+        throws ComponentLookupException
+    {
+        return container.lookupMap( role );
+    }   
+    
+    /*end[MAVEN4]*/
 }

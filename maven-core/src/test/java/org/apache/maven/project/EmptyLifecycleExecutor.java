@@ -34,7 +34,7 @@ import org.apache.maven.plugin.MojoExecution;
 /**
  * A stub implementation that assumes an empty lifecycle to bypass interaction with the plugin manager and to avoid
  * plugin artifact resolution from repositories.
- * 
+ *
  * @author Benjamin Bentmann
  */
 public class EmptyLifecycleExecutor
@@ -50,7 +50,7 @@ public class EmptyLifecycleExecutor
     {
         return new MavenExecutionPlan( null, null );
     }
-    
+
     public void execute( MavenSession session )
     {
     }
@@ -62,7 +62,7 @@ public class EmptyLifecycleExecutor
         // NOTE: The upper-case packaging name is intentional, that's a special hinting mode used for certain tests
         if ( "JAR".equals( packaging ) )
         {
-            plugins = new LinkedHashSet<Plugin>();
+            plugins = new LinkedHashSet<>();
 
             plugins.add( newPlugin( "maven-compiler-plugin", "compile", "testCompile" ) );
             plugins.add( newPlugin( "maven-resources-plugin", "resources", "testResources" ) );

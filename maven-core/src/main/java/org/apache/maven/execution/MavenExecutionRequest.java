@@ -22,15 +22,22 @@ package org.apache.maven.execution;
 import java.io.File;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 
 import org.apache.maven.artifact.repository.ArtifactRepository;
 import org.apache.maven.artifact.repository.ArtifactRepositoryPolicy;
+import org.apache.maven.eventspy.internal.EventSpyDispatcher;
 import org.apache.maven.model.Profile;
 import org.apache.maven.project.ProjectBuildingRequest;
+//
+// These settings values need to be removed and pushed down into a provider of configuration information
+//
 import org.apache.maven.settings.Mirror;
 import org.apache.maven.settings.Proxy;
 import org.apache.maven.settings.Server;
+//
+import org.apache.maven.toolchain.model.ToolchainModel;
 import org.codehaus.plexus.logging.Logger;
 import org.eclipse.aether.RepositoryCache;
 import org.eclipse.aether.repository.WorkspaceReader;
@@ -109,7 +116,7 @@ public interface MavenExecutionRequest
     /**
      * Sets the system properties to use for interpolation and profile activation. The system properties are collected
      * from the runtime environment like {@link System#getProperties()} and environment variables.
-     * 
+     *
      * @param systemProperties The system properties, may be {@code null}.
      * @return This request, never {@code null}.
      */
@@ -118,7 +125,7 @@ public interface MavenExecutionRequest
     /**
      * Gets the system properties to use for interpolation and profile activation. The system properties are collected
      * from the runtime environment like {@link System#getProperties()} and environment variables.
-     * 
+     *
      * @return The system properties, never {@code null}.
      */
     Properties getSystemProperties();
@@ -127,7 +134,7 @@ public interface MavenExecutionRequest
      * Sets the user properties to use for interpolation and profile activation. The user properties have been
      * configured directly by the user on his discretion, e.g. via the {@code -Dkey=value} parameter on the command
      * line.
-     * 
+     *
      * @param userProperties The user properties, may be {@code null}.
      * @return This request, never {@code null}.
      */
@@ -137,7 +144,7 @@ public interface MavenExecutionRequest
      * Gets the user properties to use for interpolation and profile activation. The user properties have been
      * configured directly by the user on his discretion, e.g. via the {@code -Dkey=value} parameter on the command
      * line.
-     * 
+     *
      * @return The user properties, never {@code null}.
      */
     Properties getUserProperties();
@@ -174,7 +181,7 @@ public interface MavenExecutionRequest
 
     /**
      * Set's the parallel degree of concurrency used by the build.
-     * 
+     *
      * @param degreeOfConcurrency
      */
     void setDegreeOfConcurrency( int degreeOfConcurrency );
@@ -324,7 +331,7 @@ public interface MavenExecutionRequest
      * Set a new list of remote repositories to use the execution request. This is necessary if you perform
      * transformations on the remote repositories being used. For example if you replace existing repositories with
      * mirrors then it's easier to just replace the whole list with a new list of transformed repositories.
-     * 
+     *
      * @param repositories
      * @return This request, never {@code null}.
      */
@@ -348,6 +355,22 @@ public interface MavenExecutionRequest
 
     MavenExecutionRequest setUserToolchainsFile( File userToolchainsFile );
 
+    /**
+     *
+     *
+     * @return the global toolchains file
+     * @since 3.3.0
+     */
+    File getGlobalToolchainsFile();
+
+    /**
+     *
+     * @param globalToolchainsFile the global toolchains file
+     * @return this request
+     * @since 3.3.0
+     */
+    MavenExecutionRequest setGlobalToolchainsFile( File globalToolchainsFile );
+
     ExecutionListener getExecutionListener();
 
     MavenExecutionRequest setExecutionListener( ExecutionListener executionListener );
@@ -365,17 +388,58 @@ public interface MavenExecutionRequest
     MavenExecutionRequest setUseLegacyLocalRepository( boolean useLegacyLocalRepository );
 
     /**
-     * Controls the {@link Builder} used by Maven by specification of the builder's id.
-     * 
+     * Controls the {@link org.apache.maven.lifecycle.internal.builder.Builder} used by Maven by specification
+     * of the builder's id.
+     *
      * @since 3.2.0
      */
     MavenExecutionRequest setBuilderId( String builderId );
 
     /**
-     * Controls the {@link Builder} used by Maven by specification of the builders id.
-     * 
+     * Controls the {@link org.apache.maven.lifecycle.internal.builder.Builder} used by Maven by specification
+     * of the builders id.
+     *
      * @since 3.2.0
      */
     String getBuilderId();
 
+    /**
+     *
+     * @param toolchains all toolchains grouped by type
+     * @return this request
+     * @since 3.3.0
+     */
+    MavenExecutionRequest setToolchains( Map<String, List<ToolchainModel>> toolchains );
+
+    /**
+     *
+     * @return all toolchains grouped by type, never {@code null}
+     * @since 3.3.0
+     */
+    Map<String, List<ToolchainModel>> getToolchains();
+
+    /**
+     * @since 3.3.0
+     */
+    void setMultiModuleProjectDirectory( File file );
+
+    /**
+     * @since 3.3.0
+     */
+    File getMultiModuleProjectDirectory();
+
+    /**
+     * @since 3.3.0
+     */
+    MavenExecutionRequest setEventSpyDispatcher( EventSpyDispatcher eventSpyDispatcher );
+
+    /**
+     * @since 3.3.0
+     */
+    EventSpyDispatcher getEventSpyDispatcher();
+
+    /**
+     * @since 3.3.0
+     */
+    Map<String, Object> getData();
 }

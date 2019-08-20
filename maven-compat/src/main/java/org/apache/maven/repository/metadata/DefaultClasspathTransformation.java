@@ -101,7 +101,7 @@ public class DefaultClasspathTransformation
             this.cpc = cpc;
             this.graph = cleanGraph;
 
-            visited = new ArrayList<MetadataGraphVertex>( cleanGraph.getVertices().size() );
+            visited = new ArrayList<>( cleanGraph.getVertices().size() );
         }
 
         // -----------------------------------------------------------------------
@@ -139,7 +139,7 @@ public class DefaultClasspathTransformation
 
             if ( exits != null && exits.size() > 0 )
             {
-                MetadataGraphEdge[] sortedExits = exits.toArray( new MetadataGraphEdge[exits.size()] );
+                MetadataGraphEdge[] sortedExits = exits.toArray( new MetadataGraphEdge[0] );
                 Arrays.sort( sortedExits
                         ,
                         new Comparator<MetadataGraphEdge>()

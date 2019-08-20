@@ -21,10 +21,10 @@ package org.apache.maven.plugin;
 
 import java.util.List;
 
+import org.apache.maven.artifact.Artifact;
 import org.apache.maven.model.Plugin;
 import org.apache.maven.project.MavenProject;
 import org.eclipse.aether.RepositorySystemSession;
-import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.graph.DependencyFilter;
 import org.eclipse.aether.repository.RemoteRepository;
 
@@ -32,7 +32,7 @@ import org.eclipse.aether.repository.RemoteRepository;
  * Caches plugin artifacts. <strong>Warning:</strong> This is an internal utility interface that is only public for
  * technical reasons, it is not part of the public API. In particular, this interface can be changed or deleted without
  * prior notice.
- * 
+ *
  * @author Igor Fedorenko
  * @author Benjamin Bentmann
  */
@@ -47,12 +47,25 @@ public interface PluginArtifactsCache
         // marker interface for cache keys
     }
 
-    static class CacheRecord
+    /**
+     * CacheRecord
+     */
+    class CacheRecord
     {
 
-        public final List<Artifact> artifacts;
+        private final List<Artifact> artifacts;
 
-        public final PluginResolutionException exception; 
+        public List<Artifact> getArtifacts()
+        {
+            return artifacts;
+        }
+
+        public PluginResolutionException getException()
+        {
+            return exception;
+        }
+
+        private final PluginResolutionException exception;
 
         public CacheRecord( List<Artifact> artifacts )
         {
@@ -82,7 +95,7 @@ public interface PluginArtifactsCache
      * Registers the specified cache record for usage with the given project. Integrators can use the information
      * collected from this method in combination with a custom cache implementation to dispose unused records from the
      * cache.
-     * 
+     *
      * @param project The project that employs the plugin realm, must not be {@code null}.
      * @param record The cache record being used for the project, must not be {@code null}.
      */

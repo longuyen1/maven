@@ -34,26 +34,28 @@ import javax.inject.Named;
 
 import org.apache.maven.artifact.ArtifactUtils;
 import org.apache.maven.execution.MavenSession;
+import org.apache.maven.model.Model;
 import org.apache.maven.project.MavenProject;
+import org.apache.maven.repository.internal.MavenWorkspaceReader;
 import org.eclipse.aether.artifact.Artifact;
-import org.eclipse.aether.repository.WorkspaceReader;
 import org.eclipse.aether.repository.WorkspaceRepository;
 import org.eclipse.aether.util.artifact.ArtifactIdUtils;
 
 /**
- * An implementation of a workspace reader that knows how to search the Maven reactor for artifacts, either
- * as packaged jar if it has been built, or only compile output directory if packaging hasn't happened yet.
- * 
+ * An implementation of a workspace reader that knows how to search the Maven reactor for artifacts, either as packaged
+ * jar if it has been built, or only compile output directory if packaging hasn't happened yet.
+ *
  * @author Jason van Zyl
  */
 @Named( ReactorReader.HINT )
 @SessionScoped
 class ReactorReader
-    implements WorkspaceReader
+    implements MavenWorkspaceReader
 {
     public static final String HINT = "reactor";
-    
-    private static final Collection<String> COMPILE_PHASE_TYPES = Arrays.asList( "jar", "ejb-client" );
+
+    private static final Collection<String> COMPILE_PHASE_TYPES =
+        Arrays.asList( "jar", "ejb-client", "war", "rar", "ejb3", "par", "sar", "wsr", "har", "app-client" );
 
     private Map<String, MavenProject> projectsByGAV;
 
@@ -62,11 +64,11 @@ class ReactorReader
     private WorkspaceRepository repository;
 
     @Inject
-    public ReactorReader( MavenSession session )
+    ReactorReader( MavenSession session )
     {
         projectsByGAV = session.getProjectMap();
 
-        projectsByGA = new HashMap<String, List<MavenProject>>( projectsByGAV.size() * 2 );
+        projectsByGA = new HashMap<>( projectsByGAV.size() * 2 );
         for ( MavenProject project : projectsByGAV.values() )
         {
             String key = ArtifactUtils.versionlessKey( project.getGroupId(), project.getArtifactId() );
@@ -75,14 +77,14 @@ class ReactorReader
 
             if ( projects == null )
             {
-                projects = new ArrayList<MavenProject>( 1 );
+                projects = new ArrayList<>( 1 );
                 projectsByGA.put( key, projects );
             }
 
             projects.add( project );
         }
 
-        repository = new WorkspaceRepository( "reactor", new HashSet<String>( projectsByGAV.keySet() ) );
+        repository = new WorkspaceRepository( "reactor", new HashSet<>( projectsByGAV.keySet() ) );
     }
 
     //
@@ -123,7 +125,7 @@ class ReactorReader
             return Collections.emptyList();
         }
 
-        List<String> versions = new ArrayList<String>();
+        List<String> versions = new ArrayList<>();
 
         for ( MavenProject project : projects )
         {
@@ -134,6 +136,14 @@ class ReactorReader
         }
 
         return Collections.unmodifiableList( versions );
+    }
+
+    @Override
+    public Model findModel( Artifact artifact )
+    {
+        String projectKey = ArtifactUtils.key( artifact.getGroupId(), artifact.getArtifactId(), artifact.getVersion() );
+        MavenProject project = projectsByGAV.get( projectKey );
+        return project == null ? null : project.getModel();
     }
 
     //
@@ -193,7 +203,7 @@ class ReactorReader
 
     /**
      * Tries to resolve the specified artifact from the artifacts of the given project.
-     * 
+     *
      * @param project The project to try to resolve the artifact from, must not be <code>null</code>.
      * @param requestedArtifact The artifact to resolve, must not be <code>null</code>.
      * @return The matching artifact from the project or <code>null</code> if not found. Note that this
@@ -234,7 +244,7 @@ class ReactorReader
 
     /**
      * Determines whether the specified artifact refers to test classes.
-     * 
+     *
      * @param artifact The artifact to check, must not be {@code null}.
      * @return {@code true} if the artifact refers to test classes, {@code false} otherwise.
      */

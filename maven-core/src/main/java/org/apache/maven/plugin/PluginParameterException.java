@@ -29,6 +29,9 @@ import org.apache.maven.plugin.descriptor.MojoDescriptor;
 import org.apache.maven.plugin.descriptor.Parameter;
 import org.codehaus.plexus.util.StringUtils;
 
+/**
+ * PluginParameterException
+ */
 public class PluginParameterException
     extends PluginConfigurationException
 {
@@ -78,7 +81,7 @@ public class PluginParameterException
                                                                 StringBuilder messageBuffer )
     {
         String expression = param.getExpression();
-        
+
         if ( param.isEditable() )
         {
             boolean isArray = param.getType().endsWith( "[]" );
@@ -99,7 +102,7 @@ public class PluginParameterException
                     // assume it is not assignable from Collection or Map
                 }
             }
-            
+
             messageBuffer.append( "Inside the definition for plugin \'" );
             messageBuffer.append( mojo.getPluginDescriptor().getArtifactId() );
             messageBuffer.append( "\', specify the following:\n\n<configuration>\n  ...\n" );
@@ -137,7 +140,7 @@ public class PluginParameterException
             {
                 messageBuffer.append( "</KEY>\n" );
                 messageBuffer.append( "  " );
-            }    
+            }
             messageBuffer.append( "</" ).append( param.getName() ).append( ">\n" );
             messageBuffer.append( "</configuration>" );
 
@@ -151,7 +154,7 @@ public class PluginParameterException
 
         if ( StringUtils.isEmpty( expression ) )
         {
-            messageBuffer.append( "." );
+            messageBuffer.append( '.' );
         }
         else
         {
@@ -172,7 +175,7 @@ public class PluginParameterException
         MojoDescriptor mojo = getMojoDescriptor();
 
         messageBuffer.append( "One or more required plugin parameters are invalid/missing for \'" )
-            .append( mojo.getPluginDescriptor().getGoalPrefix() ).append( ":" ).append( mojo.getGoal() )
+            .append( mojo.getPluginDescriptor().getGoalPrefix() ).append( ':' ).append( mojo.getGoal() )
             .append( "\'\n" );
 
         int idx = 0;
@@ -184,7 +187,7 @@ public class PluginParameterException
 
             decomposeParameterIntoUserInstructions( mojo, param, messageBuffer );
 
-            messageBuffer.append( "\n" );
+            messageBuffer.append( '\n' );
         }
 
         return messageBuffer.toString();

@@ -25,17 +25,21 @@ import java.util.Date;
 import java.util.List;
 import java.util.Properties;
 
+import org.apache.maven.model.Model;
 import org.apache.maven.model.Profile;
 import org.apache.maven.model.resolution.ModelResolver;
+import org.apache.maven.model.resolution.WorkspaceModelResolver;
 
 /**
  * Collects settings that control building of effective models.
- * 
+ *
  * @author Benjamin Bentmann
  */
 public class DefaultModelBuildingRequest
     implements ModelBuildingRequest
 {
+
+    private Model rawModel;
 
     private File pomFile;
 
@@ -67,6 +71,8 @@ public class DefaultModelBuildingRequest
 
     private ModelCache modelCache;
 
+    private WorkspaceModelResolver workspaceResolver;
+
     /**
      * Creates an empty request.
      */
@@ -76,7 +82,7 @@ public class DefaultModelBuildingRequest
 
     /**
      * Creates a shallow copy of the specified request.
-     * 
+     *
      * @param request The request to copy, must not be {@code null}.
      */
     public DefaultModelBuildingRequest( ModelBuildingRequest request )
@@ -97,11 +103,13 @@ public class DefaultModelBuildingRequest
         setModelCache( request.getModelCache() );
     }
 
+    @Override
     public File getPomFile()
     {
         return pomFile;
     }
 
+    @Override
     public DefaultModelBuildingRequest setPomFile( File pomFile )
     {
         this.pomFile = ( pomFile != null ) ? pomFile.getAbsoluteFile() : null;
@@ -109,6 +117,7 @@ public class DefaultModelBuildingRequest
         return this;
     }
 
+    @Override
     public synchronized ModelSource getModelSource()
     {
         if ( modelSource == null && pomFile != null )
@@ -118,6 +127,7 @@ public class DefaultModelBuildingRequest
         return modelSource;
     }
 
+    @Override
     public DefaultModelBuildingRequest setModelSource( ModelSource modelSource )
     {
         this.modelSource = modelSource;
@@ -125,11 +135,13 @@ public class DefaultModelBuildingRequest
         return this;
     }
 
+    @Override
     public int getValidationLevel()
     {
         return validationLevel;
     }
 
+    @Override
     public DefaultModelBuildingRequest setValidationLevel( int validationLevel )
     {
         this.validationLevel = validationLevel;
@@ -137,11 +149,13 @@ public class DefaultModelBuildingRequest
         return this;
     }
 
+    @Override
     public boolean isProcessPlugins()
     {
         return processPlugins;
     }
 
+    @Override
     public DefaultModelBuildingRequest setProcessPlugins( boolean processPlugins )
     {
         this.processPlugins = processPlugins;
@@ -149,11 +163,13 @@ public class DefaultModelBuildingRequest
         return this;
     }
 
+    @Override
     public boolean isTwoPhaseBuilding()
     {
         return twoPhaseBuilding;
     }
 
+    @Override
     public DefaultModelBuildingRequest setTwoPhaseBuilding( boolean twoPhaseBuilding )
     {
         this.twoPhaseBuilding = twoPhaseBuilding;
@@ -161,11 +177,13 @@ public class DefaultModelBuildingRequest
         return this;
     }
 
+    @Override
     public boolean isLocationTracking()
     {
         return locationTracking;
     }
 
+    @Override
     public DefaultModelBuildingRequest setLocationTracking( boolean locationTracking )
     {
         this.locationTracking = locationTracking;
@@ -173,21 +191,23 @@ public class DefaultModelBuildingRequest
         return this;
     }
 
+    @Override
     public List<Profile> getProfiles()
     {
         if ( profiles == null )
         {
-            profiles = new ArrayList<Profile>();
+            profiles = new ArrayList<>();
         }
 
         return profiles;
     }
 
+    @Override
     public DefaultModelBuildingRequest setProfiles( List<Profile> profiles )
     {
         if ( profiles != null )
         {
-            this.profiles = new ArrayList<Profile>( profiles );
+            this.profiles = new ArrayList<>( profiles );
         }
         else
         {
@@ -197,21 +217,23 @@ public class DefaultModelBuildingRequest
         return this;
     }
 
+    @Override
     public List<String> getActiveProfileIds()
     {
         if ( activeProfileIds == null )
         {
-            activeProfileIds = new ArrayList<String>();
+            activeProfileIds = new ArrayList<>();
         }
 
         return activeProfileIds;
     }
 
+    @Override
     public DefaultModelBuildingRequest setActiveProfileIds( List<String> activeProfileIds )
     {
         if ( activeProfileIds != null )
         {
-            this.activeProfileIds = new ArrayList<String>( activeProfileIds );
+            this.activeProfileIds = new ArrayList<>( activeProfileIds );
         }
         else
         {
@@ -221,21 +243,23 @@ public class DefaultModelBuildingRequest
         return this;
     }
 
+    @Override
     public List<String> getInactiveProfileIds()
     {
         if ( inactiveProfileIds == null )
         {
-            inactiveProfileIds = new ArrayList<String>();
+            inactiveProfileIds = new ArrayList<>();
         }
 
         return inactiveProfileIds;
     }
 
+    @Override
     public DefaultModelBuildingRequest setInactiveProfileIds( List<String> inactiveProfileIds )
     {
         if ( inactiveProfileIds != null )
         {
-            this.inactiveProfileIds = new ArrayList<String>( inactiveProfileIds );
+            this.inactiveProfileIds = new ArrayList<>( inactiveProfileIds );
         }
         else
         {
@@ -245,6 +269,7 @@ public class DefaultModelBuildingRequest
         return this;
     }
 
+    @Override
     public Properties getSystemProperties()
     {
         if ( systemProperties == null )
@@ -255,12 +280,16 @@ public class DefaultModelBuildingRequest
         return systemProperties;
     }
 
+    @Override
     public DefaultModelBuildingRequest setSystemProperties( Properties systemProperties )
     {
         if ( systemProperties != null )
         {
             this.systemProperties = new Properties();
-            this.systemProperties.putAll( systemProperties );
+            synchronized ( systemProperties )
+            { // avoid concurrentmodification if someone else sets/removes an unrelated system property
+                this.systemProperties.putAll( systemProperties );
+            }
         }
         else
         {
@@ -270,6 +299,7 @@ public class DefaultModelBuildingRequest
         return this;
     }
 
+    @Override
     public Properties getUserProperties()
     {
         if ( userProperties == null )
@@ -280,6 +310,7 @@ public class DefaultModelBuildingRequest
         return userProperties;
     }
 
+    @Override
     public DefaultModelBuildingRequest setUserProperties( Properties userProperties )
     {
         if ( userProperties != null )
@@ -295,11 +326,13 @@ public class DefaultModelBuildingRequest
         return this;
     }
 
+    @Override
     public Date getBuildStartTime()
     {
         return buildStartTime;
     }
 
+    @Override
     public ModelBuildingRequest setBuildStartTime( Date buildStartTime )
     {
         this.buildStartTime = buildStartTime;
@@ -307,11 +340,13 @@ public class DefaultModelBuildingRequest
         return this;
     }
 
+    @Override
     public ModelResolver getModelResolver()
     {
         return this.modelResolver;
     }
 
+    @Override
     public DefaultModelBuildingRequest setModelResolver( ModelResolver modelResolver )
     {
         this.modelResolver = modelResolver;
@@ -319,11 +354,13 @@ public class DefaultModelBuildingRequest
         return this;
     }
 
+    @Override
     public ModelBuildingListener getModelBuildingListener()
     {
         return modelBuildingListener;
     }
 
+    @Override
     public ModelBuildingRequest setModelBuildingListener( ModelBuildingListener modelBuildingListener )
     {
         this.modelBuildingListener = modelBuildingListener;
@@ -331,15 +368,43 @@ public class DefaultModelBuildingRequest
         return this;
     }
 
+    @Override
     public ModelCache getModelCache()
     {
         return this.modelCache;
     }
 
+    @Override
     public DefaultModelBuildingRequest setModelCache( ModelCache modelCache )
     {
         this.modelCache = modelCache;
 
+        return this;
+    }
+
+    @Override
+    public Model getRawModel()
+    {
+        return rawModel;
+    }
+
+    @Override
+    public ModelBuildingRequest setRawModel( Model rawModel )
+    {
+        this.rawModel = rawModel;
+        return this;
+    }
+
+    @Override
+    public WorkspaceModelResolver getWorkspaceModelResolver()
+    {
+        return workspaceResolver;
+    }
+
+    @Override
+    public ModelBuildingRequest setWorkspaceModelResolver( WorkspaceModelResolver workspaceResolver )
+    {
+        this.workspaceResolver = workspaceResolver;
         return this;
     }
 

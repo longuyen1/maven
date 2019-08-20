@@ -31,6 +31,9 @@ import org.codehaus.plexus.component.annotations.Component;
 import org.codehaus.plexus.component.annotations.Requirement;
 import org.codehaus.plexus.logging.AbstractLogEnabled;
 
+/**
+ * DefaultMavenProjectHelper
+ */
 @SuppressWarnings( "deprecation" )
 @Component( role = MavenProjectHelper.class )
 public class DefaultMavenProjectHelper
@@ -40,7 +43,8 @@ public class DefaultMavenProjectHelper
     @Requirement
     private ArtifactHandlerManager artifactHandlerManager;
 
-    public void attachArtifact( MavenProject project, String artifactType, String artifactClassifier, File artifactFile )
+    public void attachArtifact( MavenProject project, String artifactType, String artifactClassifier,
+                                File artifactFile )
     {
         String type = artifactType;
 
@@ -92,7 +96,7 @@ public class DefaultMavenProjectHelper
 
     /**
      * Add an attached artifact or replace the file for an existing artifact.
-     * 
+     *
      * @see MavenProject#addAttachedArtifact(org.apache.maven.artifact.Artifact)
      * @param project project reference.
      * @param artifact artifact to add or replace.

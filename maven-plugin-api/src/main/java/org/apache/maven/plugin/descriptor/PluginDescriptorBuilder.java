@@ -92,7 +92,7 @@ public class PluginDescriptorBuilder
 
         PlexusConfiguration[] dependencyConfigurations = c.getChild( "dependencies" ).getChildren( "dependency" );
 
-        List<ComponentDependency> dependencies = new ArrayList<ComponentDependency>();
+        List<ComponentDependency> dependencies = new ArrayList<>();
 
         for ( PlexusConfiguration d : dependencyConfigurations )
         {
@@ -114,6 +114,7 @@ public class PluginDescriptorBuilder
         return pluginDescriptor;
     }
 
+    @SuppressWarnings( "checkstyle:methodlength" )
     public MojoDescriptor buildComponentDescriptor( PlexusConfiguration c, PluginDescriptor pluginDescriptor )
         throws PlexusConfigurationException
     {
@@ -267,7 +268,7 @@ public class PluginDescriptorBuilder
 
         PlexusConfiguration[] parameterConfigurations = c.getChild( "parameters" ).getChildren( "parameter" );
 
-        List<Parameter> parameters = new ArrayList<Parameter>();
+        List<Parameter> parameters = new ArrayList<>();
 
         for ( PlexusConfiguration d : parameterConfigurations )
         {
@@ -299,6 +300,8 @@ public class PluginDescriptorBuilder
 
             parameter.setImplementation( d.getChild( "implementation" ).getValue() );
 
+            parameter.setSince( d.getChild( "since" ).getValue() );
+
             PlexusConfiguration paramConfig = mojoConfig.getChild( parameter.getName(), false );
             if ( paramConfig != null )
             {
@@ -311,7 +314,7 @@ public class PluginDescriptorBuilder
 
         mojo.setParameters( parameters );
 
-        // TODO: this should not need to be handed off...
+        // TODO this should not need to be handed off...
 
         // ----------------------------------------------------------------------
         // Requirements
@@ -346,11 +349,7 @@ public class PluginDescriptorBuilder
         {
             return new XmlPlexusConfiguration( Xpp3DomBuilder.build( configuration ) );
         }
-        catch ( IOException e )
-        {
-            throw new PlexusConfigurationException( e.getMessage(), e );
-        }
-        catch ( XmlPullParserException e )
+        catch ( IOException | XmlPullParserException e )
         {
             throw new PlexusConfigurationException( e.getMessage(), e );
         }

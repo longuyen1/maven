@@ -20,7 +20,6 @@ package org.apache.maven.lifecycle.internal;
  */
 
 import org.apache.maven.execution.MavenSession;
-import org.apache.maven.model.Dependency;
 import org.apache.maven.model.Plugin;
 import org.apache.maven.plugin.BuildPluginManager;
 import org.apache.maven.plugin.InvalidPluginDescriptorException;
@@ -50,15 +49,16 @@ import java.util.Collection;
 import java.util.StringTokenizer;
 
 /**
+ * <p>
  * Resolves dependencies for the artifacts in context of the lifecycle build
- * 
+ * </p>
+ * <strong>NOTE:</strong> This class is not part of any public api and can be changed or deleted without prior notice.
+ *
  * @since 3.0
  * @author Benjamin Bentmann
  * @author Jason van Zyl
  * @author jdcasey
  * @author Kristian Rosenvold (extracted class only)
- *         <p/>
- *         NOTE: This class is not part of any public api and can be changed or deleted without prior notice.
  */
 @Component( role = MojoDescriptorCreator.class )
 public class MojoDescriptorCreator
@@ -136,7 +136,7 @@ public class MojoDescriptorCreator
         return dom;
     }
 
-    // org.apache.maven.plugins:maven-remote-resources-plugin:1.0:process
+    // org.apache.maven.plugins:maven-remote-resources-plugin:1.0:process@executionId
 
     public MojoDescriptor getMojoDescriptor( String task, MavenSession session, MavenProject project )
         throws PluginNotFoundException, PluginResolutionException, PluginDescriptorParsingException,
@@ -220,6 +220,12 @@ public class MojoDescriptorCreator
             plugin = findPluginForPrefix( prefix, session );
         }
 
+        int executionIdx = goal.indexOf( '@' );
+        if ( executionIdx > 0 )
+        {
+            goal = goal.substring( 0, executionIdx );
+        }
+
         injectPluginDeclarationFromProject( plugin, project );
 
         // If there is no version to be found then we need to look in the repository metadata for
@@ -234,8 +240,8 @@ public class MojoDescriptorCreator
                                                 session.getRepositorySession() );
     }
 
-    // TODO: take repo mans into account as one may be aggregating prefixes of many
-    // TODO: collect at the root of the repository, read the one at the root, and fetch remote if something is missing
+    // TODO take repo mans into account as one may be aggregating prefixes of many
+    // TODO collect at the root of the repository, read the one at the root, and fetch remote if something is missing
     // or the user forces the issue
 
     public Plugin findPluginForPrefix( String prefix, MavenSession session )
@@ -291,7 +297,7 @@ public class MojoDescriptorCreator
                 plugin.setVersion( pluginInPom.getVersion() );
             }
 
-            plugin.setDependencies( new ArrayList<Dependency>( pluginInPom.getDependencies() ) );
+            plugin.setDependencies( new ArrayList<>( pluginInPom.getDependencies() ) );
         }
     }
 

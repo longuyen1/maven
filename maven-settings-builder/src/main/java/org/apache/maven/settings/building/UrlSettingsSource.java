@@ -19,60 +19,42 @@ package org.apache.maven.settings.building;
  * under the License.
  */
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.net.URL;
+
+import org.apache.maven.building.UrlSource;
 
 /**
  * Wraps an ordinary {@link URL} as a settings source.
- * 
+ *
  * @author Benjamin Bentmann
+ * 
+ * @deprecated instead use {@link UrlSource}
  */
-public class UrlSettingsSource
+@Deprecated
+public class UrlSettingsSource extends UrlSource
     implements SettingsSource
 {
 
-    private URL settingsUrl;
-
     /**
      * Creates a new model source backed by the specified URL.
-     * 
+     *
      * @param settingsUrl The settings URL, must not be {@code null}.
      */
     public UrlSettingsSource( URL settingsUrl )
     {
-        if ( settingsUrl == null )
-        {
-            throw new IllegalArgumentException( "no settings URL specified" );
-        }
-        this.settingsUrl = settingsUrl;
-    }
-
-    public InputStream getInputStream()
-        throws IOException
-    {
-        return settingsUrl.openStream();
-    }
-
-    public String getLocation()
-    {
-        return settingsUrl.toString();
+        super( settingsUrl );
     }
 
     /**
      * Gets the settings URL of this model source.
-     * 
+     *
      * @return The underlying settings URL, never {@code null}.
+     * @deprecated instead use {@link #getUrl()}
      */
+    @Deprecated
     public URL getSettingsUrl()
     {
-        return settingsUrl;
+        return getUrl();
     }
-
-    @Override
-    public String toString()
-    {
-        return getLocation();
-    }
-
+    
 }

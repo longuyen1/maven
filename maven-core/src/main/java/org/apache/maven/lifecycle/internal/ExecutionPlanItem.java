@@ -29,10 +29,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
+ * <p>
  * Wraps individual MojoExecutions, containing information about completion status and scheduling.
- * <p/>
- * NOTE: This class is not part of any public api and can be changed or deleted without prior notice.
- * 
+ * </p>
+ * <strong>NOTE:</strong> This class is not part of any public api and can be changed or deleted without prior notice.
+ *
  * @since 3.0
  * @author Kristian Rosenvold
  */
@@ -50,7 +51,7 @@ public class ExecutionPlanItem
     {
         BuilderCommon.attachToThread( mavenProject );
 
-        List<ExecutionPlanItem> result = new ArrayList<ExecutionPlanItem>();
+        List<ExecutionPlanItem> result = new ArrayList<>();
         for ( MojoExecution mojoExecution : executions )
         {
             result.add( new ExecutionPlanItem( mojoExecution ) );

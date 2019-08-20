@@ -35,18 +35,18 @@ import org.apache.maven.artifact.Artifact;
 public class AndArtifactFilter
     implements ArtifactFilter
 {
-    private Set<ArtifactFilter> filters; 
+    private Set<ArtifactFilter> filters;
 
     public AndArtifactFilter()
     {
-        this.filters = new LinkedHashSet<ArtifactFilter>();
+        this.filters = new LinkedHashSet<>();
     }
 
     public AndArtifactFilter( List<ArtifactFilter> filters )
     {
-        this.filters = new LinkedHashSet<ArtifactFilter>( filters );
+        this.filters = new LinkedHashSet<>( filters );
     }
-    
+
     public boolean include( Artifact artifact )
     {
         boolean include = true;
@@ -68,7 +68,7 @@ public class AndArtifactFilter
 
     public List<ArtifactFilter> getFilters()
     {
-        return new ArrayList<ArtifactFilter>( filters );
+        return new ArrayList<>( filters );
     }
 
     @Override
@@ -86,14 +86,14 @@ public class AndArtifactFilter
         {
             return true;
         }
-        
+
         if ( !( obj instanceof AndArtifactFilter ) )
         {
             return false;
         }
-        
+
         AndArtifactFilter other = (AndArtifactFilter) obj;
-        
+
         return filters.equals( other.filters );
     }
 }
